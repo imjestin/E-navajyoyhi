@@ -1,49 +1,65 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-
+{% load static %}<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>C.M.S | Log In</title>
-    <!-- Tell the browser to be responsive to screen width -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Password reset{% endblock %} &middot; {{ site.short_name|default:"SkillyCMS" }}</title>
+    <link rel="icon" type="image/png"
+          href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
 
-    <!-- Font Awesome -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('enj-theme') || "{{ site.default_theme|default:'system' }}";
+          if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+
     <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="{% static 'https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css' %}">
-    <!-- icheck bootstrap -->
-    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-    <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dist/css/enj.css' %}?v=4">
+    {% include "main_app/_branding.html" %}
+
+    <style>
+        .auth { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; background: var(--ground); }
+        .auth__card {
+            width: 100%; max-width: 420px; background: var(--surface);
+            border: 1px solid var(--line); border-radius: var(--r-lg);
+            box-shadow: var(--shadow); padding: 1.9rem 1.7rem 1.5rem;
+        }
+        .auth__brand { text-align: center; margin-bottom: 1.3rem; }
+        .auth__brand img { width: 54px; height: 54px; object-fit: contain; margin-bottom: .5rem; }
+        .auth__brand h1 { font-size: 1.12rem; margin: 0; }
+        .auth__brand p { font-size: .84rem; color: var(--muted); margin: .2rem 0 0; }
+        .auth__foot { margin-top: 1.1rem; text-align: center; font-size: .84rem; }
+    </style>
 </head>
 
-<body class="hold-transition login-page">
-    <div class="login-box">
-        <div class="login-logo">
-            <a href=""><b>C.M.S</b></a>
-
+<body>
+<main class="auth">
+    <div class="auth__card">
+        <div class="auth__brand">
+            <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}" alt="">
+            <h1>{{ site.short_name|default:"SkillyCMS" }}</h1>
+            <p>{{ site.college_name|default:"Your College" }}</p>
         </div>
-        <!-- /.login-logo -->
-        <div class="card">
-           
-          {% block content %}
-            
-          {% endblock content %}
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock content %}
+
+        <div class="auth__foot">
+            <a href="{% url 'login_page' %}">Back to sign in</a>
         </div>
     </div>
-    <!-- /.login-box -->
-
-    <!-- jQuery -->
-    <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
-    <!-- Bootstrap 4 -->
-    <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <!-- AdminLTE App -->
-    <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
-
+</main>
 </body>
-
 </html>
