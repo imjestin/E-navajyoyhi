@@ -68,13 +68,13 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th class="no-mobile">#</th>
                     {% include 'main_app/_sort_th.html' with key='name' label='Name' %}
                     {% include 'main_app/_sort_th.html' with key='register' label='Register No' %}
-                    {% include 'main_app/_sort_th.html' with key='email' label='Email' %}
+                    email-th
                     <th>Phone</th>
                     {% include 'main_app/_sort_th.html' with key='course' label='Course' %}
-                    {% include 'main_app/_sort_th.html' with key='department' label='Department' %}
+                    {% include 'main_app/_sort_th.html' with key='department' label='Department' th_class='no-mobile' %}
                     {% include 'main_app/_sort_th.html' with key='session' label='Batch' %}
                     <th class="no-print">Actions</th>
                 </tr>
@@ -82,16 +82,16 @@
             <tbody>
                 {% for student in page_obj %}
                 <tr>
-                    <td class="text-muted">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                    <td class="text-muted no-mobile">{{ forloop.counter0|add:page_obj.start_index }}</td>
                     <td>
                         <strong>{{ student.admin.first_name }} {{ student.admin.last_name }}</strong>
                         {% if student.admin.gender %}<span class="text-muted text-sm">&nbsp;{{ student.admin.gender }}</span>{% endif %}
                     </td>
                     <td class="nowrap">{{ student.register_num|default:"&mdash;" }}</td>
-                    <td>{{ student.admin.email }}</td>
+                    <td class="no-mobile">{{ student.admin.email }}</td>
                     <td class="nowrap">{{ student.phone_num|default:"&mdash;" }}</td>
                     <td>{{ student.course.name|default:"&mdash;" }}</td>
-                    <td>{{ student.department.name|default:"&mdash;" }}</td>
+                    <td class="no-mobile">{{ student.department.name|default:"&mdash;" }}</td>
                     <td class="nowrap">{% if student.session %}{{ student.session.start_year|date:"Y" }}&ndash;{{ student.session.end_year|date:"Y" }}{% else %}&mdash;{% endif %}</td>
                     <td class="nowrap no-print">
                         <a href="{% url 'view_profile' student.id %}" class="btn btn-sm">View</a>

@@ -53,10 +53,10 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th class="no-mobile">#</th>
                     {% include 'main_app/_sort_th.html' with key='name' label='Name' %}
-                    {% include 'main_app/_sort_th.html' with key='email' label='Email' %}
-                    <th>Phone</th>
+                    {% include 'main_app/_sort_th.html' with key='email' label='Email' th_class='no-mobile' %}
+                    <th class="no-mobile">Phone</th>
                     {% include 'main_app/_sort_th.html' with key='department' label='Department' %}
                     {% include 'main_app/_sort_th.html' with key='qualification' label='Qualification' %}
                     <th class="no-print">Actions</th>
@@ -65,10 +65,10 @@
             <tbody>
                 {% for staff in page_obj %}
                 <tr>
-                    <td class="text-muted">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                    <td class="text-muted no-mobile">{{ forloop.counter0|add:page_obj.start_index }}</td>
                     <td><strong>{{ staff.admin.first_name }} {{ staff.admin.last_name }}</strong></td>
-                    <td>{{ staff.admin.email }}</td>
-                    <td class="nowrap">{{ staff.phone_num|default:"&mdash;" }}</td>
+                    <td class="no-mobile">{{ staff.admin.email }}</td>
+                    <td class="nowrap no-mobile">{{ staff.phone_num|default:"&mdash;" }}</td>
                     <td>{{ staff.department.name|default:"&mdash;" }}</td>
                     <td>{{ staff.qualification|default:"&mdash;" }}</td>
                     <td class="nowrap no-print">

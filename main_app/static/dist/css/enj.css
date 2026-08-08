@@ -540,6 +540,78 @@ input[type="checkbox"], input[type="radio"] { width: auto; display: inline-block
    and let tables break across pages with their header repeated. */
 .print-only { display: none; }
 
+/* --- Touch and small screens --------------------------------------------
+   Measured problems this fixes: form controls under 16px make iOS zoom the
+   whole page on focus; 34px buttons are below the 44px touch-target minimum;
+   and filter bars with fixed min-widths pushed the page into horizontal
+   scrolling on a 390px screen. */
+
+@media (pointer: coarse) {
+  .btn, .icon-btn, .pagination a, .pagination span { min-height: 44px; }
+  .btn { padding-top: .62rem; padding-bottom: .62rem; }
+  .btn-sm { min-height: 38px; padding-top: .42rem; padding-bottom: .42rem; }
+  .rail a.rail__link { padding-top: .7rem; padding-bottom: .7rem; }
+  input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; }
+  table.table td .btn { min-height: 36px; }
+}
+
+@media (max-width: 640px) {
+  /* 16px exactly: anything smaller and Safari zooms in when the field is
+     focused, then leaves the page zoomed. */
+  .form-control, select, textarea,
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="date"], input[type="search"], input[type="tel"] {
+    font-size: 16px;
+  }
+
+  .content { padding: .8rem .7rem 2rem; }
+  .topbar { padding: 0 .8rem; gap: .5rem; }
+  .topbar__title { font-size: .95rem; }
+
+  .card { border-radius: var(--r); margin-bottom: .85rem; }
+  .card-header { padding: .75rem .85rem; flex-wrap: wrap; }
+  .card-body { padding: .85rem; }
+  .card-footer { padding: .7rem .85rem; }
+
+  /* Header actions wrap onto their own full-width row instead of crushing
+     the title into two characters. */
+  .card-tools { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  .card-tools .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* Filter bars: one control per row, none of them wider than the screen. */
+  .toolbar { padding: .75rem .85rem; }
+  .toolbar form { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; }
+  .toolbar .search { max-width: none; flex: 1 1 auto; }
+  .toolbar select, .toolbar input, .toolbar .form-control {
+    width: 100% !important; min-width: 0 !important;
+  }
+  .toolbar__right { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  .toolbar__right .btn { flex: 1 1 auto; justify-content: center; }
+  .toolbar label { display: none; }              /* "From"/"to" are obvious from the inputs */
+
+  /* Tables stay scrollable, but shed the columns a phone cannot use. */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  table.table { font-size: .86rem; }
+  table.table th, table.table td { padding: .55rem .55rem; }
+  .no-mobile { display: none !important; }
+
+  .pagination { padding: .7rem .85rem; gap: .25rem; }
+  .empty { padding: 2rem .85rem; }
+  .small-box { padding: .8rem .9rem; }
+  .small-box .inner h3 { font-size: 1.65rem; }
+  .chart-box { height: 240px; }
+  .app-footer { padding: .9rem .85rem; font-size: .78rem; }
+
+  /* Settings: the side tabs become a horizontal strip, not a sticky column. */
+  .settings-nav { position: static !important; display: flex; overflow-x: auto; gap: .3rem; }
+  .settings-nav button { width: auto; white-space: nowrap; margin-bottom: 0; }
+}
+
+@media (max-width: 380px) {
+  .card-tools .btn span, .btn .label-long { display: none; }
+  h1 { font-size: 1.25rem; }
+}
+
 @media print {
   /* `:root:root:root` (0,3,0) deliberately: a plain `:root` is 0,1,0 and loses
      to `:root:not([data-theme="light"])` (0,2,0) in the prefers-color-scheme

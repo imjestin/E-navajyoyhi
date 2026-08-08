@@ -25,7 +25,7 @@
 
     <div class="toolbar">
         <form method="get" action="">
-            <select name="subject" class="form-control" style="min-width:280px" onchange="this.form.submit()">
+            <select name="subject" class="form-control" style="min-width:min(280px, 100%)" onchange="this.form.submit()">
                 <option value="">Choose a subject&hellip;</option>
                 {% for s in subjects %}
                     <option value="{{ s.id }}" {% if selected_subject == s.id|stringformat:"s" %}selected{% endif %}>
@@ -35,7 +35,7 @@
             </select>
 
             {% if subject %}
-            <select name="attendance" class="form-control" style="min-width:200px" onchange="this.form.submit()">
+            <select name="attendance" class="form-control" style="min-width:min(200px, 100%)" onchange="this.form.submit()">
                 <option value="">Choose a class date&hellip;</option>
                 {% for klass in classes %}
                     <option value="{{ klass.id }}" {% if selected_attendance == klass.id|stringformat:"s" %}selected{% endif %}>
