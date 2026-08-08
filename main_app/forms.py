@@ -35,7 +35,11 @@ class CustomUserForm(FormSettings):
         required=True,
         widget=forms.EmailInput(attrs={"placeholder": "name@example.com",
                                        "autocomplete": "email"}))
-    gender = forms.ChoiceField(choices=GENDER_CHOICES)
+    # Optional on purpose. It used to be required, which meant an account
+    # created without one - every account the setup wizard makes - could not
+    # save any profile change at all, including uploading a photograph: the
+    # form failed validation and silently discarded the file.
+    gender = forms.ChoiceField(choices=GENDER_CHOICES, required=False)
     first_name = forms.CharField(required=True,
                                  widget=forms.TextInput(attrs={"autocomplete": "given-name"}))
     last_name = forms.CharField(required=True,

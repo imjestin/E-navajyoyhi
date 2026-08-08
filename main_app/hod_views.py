@@ -1196,7 +1196,11 @@ def admin_view_profile(request):
                 messages.success(request, "Profile Updated!")
                 return redirect(reverse('admin_view_profile'))
             else:
-                messages.error(request, "Invalid Data Provided")
+                # Name the fields: a bare "invalid data" message left admins
+                # unable to tell why a photo upload had been discarded.
+                problems = "; ".join(
+                    f"{form.fields[f].label or f}: {e[0]}" for f, e in form.errors.items())
+                messages.error(request, f"Could not save your profile - {problems}")
         except Exception as e:
             messages.error(
                 request, "Error Occured While Updating Profile " + str(e))
