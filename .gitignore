@@ -1,0 +1,30 @@
+# Secrets - never commit
+.env
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Django
+/static/            # collectstatic output; sources live in main_app/static
+*.log
+
+# Local database - remove this line if you intend to version the SQLite file
+# db.sqlite3
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Runtime data - never publish. The database holds real accounts and student
+# personal details; media/ holds uploaded photographs of real people.
+db.sqlite3
+db.sqlite3-journal
+/media/

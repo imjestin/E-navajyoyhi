@@ -1,0 +1,56 @@
+{% extends "setup/base.html" %}
+{% block heading %}Welcome{% endblock %}
+{% block subheading %}This installer runs once, then closes itself.{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header"><h3 class="card-title">System checks</h3></div>
+    <div class="card-body">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <td>Database connection</td>
+                    <td class="text-right">
+                        {% if db_ready %}
+                            <span class="badge badge-success">Connected ({{ db_detail }})</span>
+                        {% else %}
+                            <span class="badge badge-danger">Not reachable</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Administrator account</td>
+                    <td class="text-right">
+                        {% if has_admin %}
+                            <span class="badge badge-success">Already created</span>
+                        {% else %}
+                            <span class="badge">To be created in step 2</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        {% if not db_ready %}
+        <div class="alert alert-danger">
+            <span>The application cannot reach its database, so setup cannot continue.
+            Check that the database container is running and that DATABASE_URL is correct.
+            <br><code>{{ db_detail }}</code></span>
+        </div>
+        {% else %}
+        <p class="text-muted text-sm mb-0">
+            Next you will create the administrator account, then enter your college's name and
+            branding. Both can be changed later from Settings.
+        </p>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="1">
+            <button type="submit" class="btn btn-primary" {% if not db_ready %}disabled{% endif %}>
+                Begin setup <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

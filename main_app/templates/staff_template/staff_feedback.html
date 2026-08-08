@@ -1,0 +1,39 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Send feedback</h3></div>
+            {% include "main_app/form_template.html" with form=form button_text="Send feedback" %}
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">My feedback</h3>
+                <span class="result-count">{{ feedbacks|length }} in total</span>
+            </div>
+            {% if feedbacks %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Message</th><th>Reply</th></tr></thead>
+                    <tbody>
+                        {% for fb in feedbacks %}
+                        <tr>
+                            <td>{{ fb.feedback }}</td>
+                            <td>{% if fb.reply %}{{ fb.reply }}{% else %}<span class="badge badge-warning">Awaiting reply</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><i class="far fa-comment-dots"></i>
+                <h3>No feedback sent yet</h3>
+                <p>Replies from the office appear beside your message.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

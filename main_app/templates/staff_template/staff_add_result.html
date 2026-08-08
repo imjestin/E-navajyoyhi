@@ -1,0 +1,125 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .marks input { width: 92px; text-align: right; }
+    .marks td.num { width: 120px; }
+    .marks .total { font-weight: 700; font-variant-numeric: tabular-nums; }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Enter marks</h3>
+        <div class="card-tools">
+            <a href="{% url 'edit_student_result' %}" class="btn btn-sm">Edit a single result</a>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <form method="get" action="">
+            <select name="subject" class="form-control" style="min-width:300px" onchange="this.form.submit()">
+                <option value="">Choose a subject&hellip;</option>
+                {% for s in subjects %}
+                    <option value="{{ s.id }}" {% if selected_subject == s.id|stringformat:"s" %}selected{% endif %}>
+                        {{ s.course.name }} &middot; {{ s.name }}{% if s.session %} ({{ s.session.start_year|date:"Y" }}&ndash;{{ s.session.end_year|date:"Y" }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <div class="toolbar__right">
+                <button type="submit" class="btn btn-primary btn-sm">Load class</button>
+            </div>
+        </form>
+    </div>
+
+    {% if not subject %}
+        <div class="empty">
+            <i class="fas fa-poll"></i>
+            <h3>Choose a subject</h3>
+            <p>Marks are entered for a whole class at once.</p>
+        </div>
+    {% elif not rows %}
+        <div class="empty">
+            <i class="fas fa-user-graduate"></i>
+            <h3>No students enrolled</h3>
+            <p>Nobody is registered for {{ subject.course.name }} in this batch.</p>
+        </div>
+    {% else %}
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="subject" value="{{ subject.id }}">
+            <input type="hidden" name="save" value="1">
+
+            <div class="card-body" style="padding-bottom:.4rem">
+                <strong>{{ subject.name }}</strong> &middot; {{ subject.course.name }}
+                <span class="text-muted text-sm">
+                    &middot; internal out of {{ max_internal }}, exam out of {{ max_exam }}
+                </span>
+            </div>
+
+            <div class="table-wrap">
+                <table class="table table-hover marks">
+                    <thead>
+                        <tr><th>#</th><th>Student</th><th>Register no</th>
+                            <th class="num text-right">Internal</th>
+                            <th class="num text-right">Exam</th>
+                            <th class="text-right">Total</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td class="text-muted">{{ forloop.counter }}</td>
+                            <td>{{ row.student.admin.first_name }} {{ row.student.admin.last_name }}</td>
+                            <td class="nowrap text-muted">{{ row.student.register_num|default:"&mdash;" }}</td>
+                            <td class="num text-right">
+                                <input type="number" step="0.1" min="0" max="{{ max_internal }}"
+                                       class="form-control" name="test_{{ row.student.id }}"
+                                       value="{{ row.test }}" data-mark>
+                            </td>
+                            <td class="num text-right">
+                                <input type="number" step="0.1" min="0" max="{{ max_exam }}"
+                                       class="form-control" name="exam_{{ row.student.id }}"
+                                       value="{{ row.exam }}" data-mark>
+                            </td>
+                            <td class="text-right total" data-total>&mdash;</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer d-flex align-items-center gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save marks</button>
+                <a href="{% url 'staff_add_result' %}" class="btn">Cancel</a>
+                <span class="text-muted text-sm ml-auto">Rows left blank are skipped.</span>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+(function () {
+  function paint(tr) {
+    var inputs = tr.querySelectorAll('[data-mark]');
+    var cell = tr.querySelector('[data-total]');
+    if (!cell || inputs.length < 2) return;
+    var a = parseFloat(inputs[0].value), b = parseFloat(inputs[1].value);
+    if (isNaN(a) && isNaN(b)) { cell.textContent = '—'; return; }
+    cell.textContent = ((isNaN(a) ? 0 : a) + (isNaN(b) ? 0 : b)).toFixed(1);
+  }
+  document.querySelectorAll('.marks tbody tr').forEach(function (tr) {
+    tr.querySelectorAll('[data-mark]').forEach(function (input) {
+      input.addEventListener('input', function () { paint(tr); });
+    });
+    paint(tr);
+  });
+})();
+</script>
+{% endblock custom_js %}

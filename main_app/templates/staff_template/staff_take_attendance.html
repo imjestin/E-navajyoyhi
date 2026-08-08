@@ -1,0 +1,160 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .roster td.tick { width: 92px; text-align: center; }
+    .roster input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+    .roster tr.is-absent td { background: var(--bad-soft); }
+    .roster tr.is-absent td.name { font-weight: 600; }
+    .tally { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; font-size: .9rem; }
+    .tally strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Take attendance</h3></div>
+
+    <div class="toolbar">
+        <form method="get" action="">
+            <select name="subject" class="form-control" style="min-width:280px" onchange="this.form.submit()">
+                <option value="">Choose a subject&hellip;</option>
+                {% for s in subjects %}
+                    <option value="{{ s.id }}" {% if selected_subject == s.id|stringformat:"s" %}selected{% endif %}>
+                        {{ s.course.name }} &middot; {{ s.name }}{% if s.session %} ({{ s.session.start_year|date:"Y" }}&ndash;{{ s.session.end_year|date:"Y" }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <label class="text-sm text-muted mb-0" style="margin:0 .2rem 0 .5rem">Date</label>
+            <input type="date" name="date" value="{{ date|default:today }}" class="form-control" style="width:auto">
+            <div class="toolbar__right">
+                <button type="submit" class="btn btn-primary btn-sm">Load register</button>
+            </div>
+        </form>
+    </div>
+
+    {% if not subject %}
+        <div class="empty">
+            <i class="fas fa-clipboard-check"></i>
+            <h3>Choose a subject and date</h3>
+            <p>Pick one of your subjects above and the date of the class.</p>
+        </div>
+
+    {% elif not date %}
+        <div class="empty">
+            <i class="far fa-calendar-alt"></i>
+            <h3>Choose the date of the class</h3>
+        </div>
+
+    {% elif not rows %}
+        <div class="empty">
+            <i class="fas fa-user-graduate"></i>
+            <h3>No students enrolled</h3>
+            <p>No student is registered for {{ subject.course.name }} in this batch, so there is
+            nobody to mark. Ask the office to enrol students first.</p>
+        </div>
+
+    {% else %}
+        {% if existing %}
+        <div class="card-body" style="padding-bottom:0">
+            <div class="alert alert-info">
+                <span>Attendance for this class was already recorded. The register below shows what
+                was saved &mdash; changing it will overwrite the earlier entry.</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="subject" value="{{ subject.id }}">
+            <input type="hidden" name="date" value="{{ date }}">
+            <input type="hidden" name="save" value="1">
+
+            <div class="card-body" style="padding-bottom:.4rem">
+                <div class="tally">
+                    <span><strong>{{ subject.name }}</strong> &middot; {{ subject.course.name }}</span>
+                    <span class="text-muted">{{ date }}</span>
+                    <span class="ml-auto">
+                        Present <strong data-present>0</strong> of <strong>{{ rows|length }}</strong>
+                    </span>
+                    <button type="button" class="btn btn-sm" data-all="1">All present</button>
+                    <button type="button" class="btn btn-sm" data-all="0">All absent</button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="table table-hover roster">
+                    <thead>
+                        <tr><th>#</th><th>Student</th><th>Register no</th><th class="tick">Present</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td class="text-muted">{{ forloop.counter }}</td>
+                            <td class="name">{{ row.student.admin.first_name }} {{ row.student.admin.last_name }}</td>
+                            <td class="nowrap text-muted">{{ row.student.register_num|default:"&mdash;" }}</td>
+                            <td class="tick">
+                                <input type="checkbox" name="present" value="{{ row.student.id }}"
+                                       id="p{{ row.student.id }}" {% if row.present %}checked{% endif %}>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer d-flex align-items-center gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> {% if existing %}Update{% else %}Save{% endif %} attendance
+                </button>
+                <a href="{% url 'staff_take_attendance' %}" class="btn">Cancel</a>
+                <span class="text-muted text-sm ml-auto">Unticked students are marked absent.</span>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+(function () {
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[name="present"]'));
+  var readout = document.querySelector('[data-present]');
+  if (!boxes.length) return;
+
+  function paint() {
+    var n = 0;
+    boxes.forEach(function (b) {
+      var row = b.closest('tr');
+      if (b.checked) { n++; row.classList.remove('is-absent'); }
+      else { row.classList.add('is-absent'); }
+    });
+    if (readout) readout.textContent = n;
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', paint); });
+
+  document.querySelectorAll('[data-all]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var on = btn.dataset.all === '1';
+      boxes.forEach(function (b) { b.checked = on; });
+      paint();
+    });
+  });
+
+  // Clicking anywhere on the row toggles the tick - faster on a phone.
+  document.querySelectorAll('.roster tbody tr').forEach(function (tr) {
+    tr.addEventListener('click', function (e) {
+      if (e.target.tagName === 'INPUT') return;
+      var box = tr.querySelector('input[name="present"]');
+      if (box) { box.checked = !box.checked; paint(); }
+    });
+  });
+
+  paint();
+})();
+</script>
+{% endblock custom_js %}

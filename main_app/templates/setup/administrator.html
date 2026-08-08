@@ -1,0 +1,36 @@
+{% extends "setup/base.html" %}
+{% block heading %}Administrator account{% endblock %}
+{% block subheading %}This is the account you will sign in with.{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Create the administrator</h3></div>
+    <form method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="step" value="2">
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger"><span>{{ form.non_field_errors|join:" " }}</span></div>
+            {% endif %}
+            <div class="row">
+                {% for field in form %}
+                <div class="{% if field.name == 'email' %}col-12{% else %}col-md-6{% endif %}">
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}" class="required">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<small class="form-text">{{ field.help_text }}</small>{% endif %}
+                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="text-muted text-sm mb-0">
+                Keep this password safe. There is no other administrator yet, and this installer
+                cannot be run again once setup finishes.
+            </p>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Create account</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

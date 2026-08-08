@@ -14,22 +14,65 @@ import dj_database_url
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Secrets and per-environment settings come from .env (see .env.example).
+load_dotenv(BASE_DIR / ".env")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
+
+def env_bool(name, default=False):
+    return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
+
+
+def env_list(name, default=""):
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
+# Where uploads and the generated secret key live. In a container this is a
+# mounted volume, so they survive `docker compose down`.
+DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR))
+
+
+def get_secret_key():
+    """Read the secret key, generating and persisting one on first boot.
+
+    A packaged install has nobody to write a .env by hand, and regenerating the
+    key on every start would sign everyone out. So: environment first, then a
+    file in the data directory, and only generate when neither exists.
+    """
+    key = os.environ.get("SECRET_KEY")
+    if key:
+        return key
+    key_file = Path(os.environ.get("SECRET_KEY_FILE", DATA_DIR / "secret_key"))
+    if key_file.exists():
+        return key_file.read_text().strip()
+    from django.core.management.utils import get_random_secret_key
+    key = get_random_secret_key()
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    key_file.write_text(key)
+    key_file.chmod(0o600)
+    return key
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'f2zx8*lb*em*-*b+!&1lpp&$_9q9kmkar+l3x90do@s(+sr&x7'  # Consider using your secret key
+SECRET_KEY = get_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = env_bool("DEBUG", False)
 
-# ALLOWED_HOSTS = ['smswithdjango.herokuapp.com']
-ALLOWED_HOSTS = ['127.0.0.1']  # Not recommended but useful in dev mode
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "127.0.0.1,localhost")
+
+# Required once the college puts this behind an HTTPS proxy, or every form
+# submission is rejected as a CSRF failure.
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+
+if env_bool("BEHIND_TLS_PROXY", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -42,6 +85,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
 
     # My Apps
     'main_app.apps.MainAppConfig'
@@ -76,6 +120,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'main_app.context_processors.site_settings',
             ],
         },
     },
@@ -105,23 +150,26 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
-if not DEBUG:
+# These used to be inverted: empty when DEBUG was off, so production ran with
+# no password rules at all. Always validate; relax only for local development.
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+if DEBUG:
+    # Keeps throwaway demo passwords usable on a local machine.
     AUTH_PASSWORD_VALIDATORS = []
-else:
-    AUTH_PASSWORD_VALIDATORS = [
-        {
-            'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-        },
-    ]
 
 
 # Internationalization
@@ -129,11 +177,9 @@ else:
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
-
-USE_L10N = True
 
 USE_TZ = True
 
@@ -144,12 +190,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_URL = '/media/'
-  
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Uploads must live on the data volume, or every logo and photograph is lost
+# the next time the image is rebuilt.
+STATIC_ROOT = os.environ.get('STATIC_ROOT', os.path.join(BASE_DIR, 'static'))
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 AUTH_USER_MODEL = 'main_app.CustomUser'
 AUTHENTICATION_BACKENDS = ['main_app.EmailBackend.EmailBackend']
-TIME_ZONE = 'Africa/Lagos'
+TIME_ZONE = 'Asia/Kolkata'
 
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_mails")
@@ -158,12 +206,32 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 
-EMAIL_HOST_USER = os.environ.get('EMAIL_ADDRESS') 
+EMAIL_HOST_USER = os.environ.get('EMAIL_ADDRESS')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 EMAIL_USE_TLS = True
+
+# --- Third party messaging ------------------------------------------------
+# All read from .env; nothing is hardcoded. TWILIO_ENABLED=False disables
+# sending entirely without any code change.
+TWILIO_ENABLED = env_bool('TWILIO_ENABLED', False)
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER', '')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
+SMS_DEFAULT_COUNTRY_CODE = os.environ.get('SMS_DEFAULT_COUNTRY_CODE', '+91')
+
+FCM_SERVER_KEY = os.environ.get('FCM_SERVER_KEY', '')
 # DEFAULT_FROM_EMAIL = "School Management System <admin@admin.com>"
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Django 5.1 removed STATICFILES_STORAGE / DEFAULT_FILE_STORAGE in favour of STORAGES
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 prod_db = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(prod_db)

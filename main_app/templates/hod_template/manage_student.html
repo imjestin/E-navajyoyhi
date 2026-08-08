@@ -1,0 +1,118 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Students</h3>
+        <span class="result-count">{{ total }} record{{ total|pluralize }}</span>
+        <div class="card-tools">
+            <a href="{% url 'import_students' %}" class="btn btn-sm"><i class="fas fa-file-import"></i> Import CSV</a>
+            <a href="{% url 'export_students' %}{% if querystring %}?{{ querystring }}{% endif %}"
+               class="btn btn-sm"><i class="fas fa-file-export"></i> Export</a>
+            <button type="button" class="btn btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            <a href="{% url 'course_student_list' course_ids='1-2-3-4-5-6-7-8-9' %}" class="btn btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
+            <a href="{% url 'add_student' %}" class="btn btn-sm btn-primary"><i class="fas fa-user-plus"></i> Add Student</a>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <form method="get" action="">
+            <div class="search">
+                <i class="fas fa-search"></i>
+                <input type="search" name="q" value="{{ q }}" class="form-control"
+                       placeholder="Search name, email, register no, admission no or phone">
+            </div>
+
+            <select name="department" class="form-control" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                {% for d in departments %}
+                    <option value="{{ d.id }}" {% if selected.department == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="course" class="form-control" onchange="this.form.submit()">
+                <option value="">All courses</option>
+                {% for c in courses %}
+                    <option value="{{ c.id }}" {% if selected.course == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="session" class="form-control" onchange="this.form.submit()">
+                <option value="">All batches</option>
+                {% for s in sessions %}
+                    <option value="{{ s.id }}" {% if selected.session == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+
+            <div class="toolbar__right">
+                <select name="per_page" class="form-control" onchange="this.form.submit()" aria-label="Rows per page">
+                    {% for size in page_sizes %}
+                        <option value="{{ size }}" {% if per_page == size %}selected{% endif %}>{{ size }} / page</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                {% if q or selected.department or selected.course or selected.session %}
+                    <a href="{% url 'manage_student' %}" class="btn btn-sm">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    {% include 'main_app/_sort_th.html' with key='name' label='Name' %}
+                    {% include 'main_app/_sort_th.html' with key='register' label='Register No' %}
+                    {% include 'main_app/_sort_th.html' with key='email' label='Email' %}
+                    <th>Phone</th>
+                    {% include 'main_app/_sort_th.html' with key='course' label='Course' %}
+                    {% include 'main_app/_sort_th.html' with key='department' label='Department' %}
+                    {% include 'main_app/_sort_th.html' with key='session' label='Batch' %}
+                    <th class="no-print">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in page_obj %}
+                <tr>
+                    <td class="text-muted">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                    <td>
+                        <strong>{{ student.admin.first_name }} {{ student.admin.last_name }}</strong>
+                        {% if student.admin.gender %}<span class="text-muted text-sm">&nbsp;{{ student.admin.gender }}</span>{% endif %}
+                    </td>
+                    <td class="nowrap">{{ student.register_num|default:"&mdash;" }}</td>
+                    <td>{{ student.admin.email }}</td>
+                    <td class="nowrap">{{ student.phone_num|default:"&mdash;" }}</td>
+                    <td>{{ student.course.name|default:"&mdash;" }}</td>
+                    <td>{{ student.department.name|default:"&mdash;" }}</td>
+                    <td class="nowrap">{% if student.session %}{{ student.session.start_year|date:"Y" }}&ndash;{{ student.session.end_year|date:"Y" }}{% else %}&mdash;{% endif %}</td>
+                    <td class="nowrap no-print">
+                        <a href="{% url 'view_profile' student.id %}" class="btn btn-sm">View</a>
+                        <a href="{% url 'edit_student' student.id %}" class="btn btn-sm btn-primary">Edit</a>
+                        <a href="{% url 'delete_student' student.id %}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('Delete {{ student.admin.first_name }} {{ student.admin.last_name }}? This cannot be undone.')">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'main_app/_pagination.html' %}
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-user-graduate"></i>
+        <h3>No students match this search</h3>
+        <p>Try clearing the filters, or add students individually or by CSV import.</p>
+        <a href="{% url 'manage_student' %}" class="btn">Clear filters</a>
+        <a href="{% url 'import_students' %}" class="btn btn-primary">Import CSV</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}

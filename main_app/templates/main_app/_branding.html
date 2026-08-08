@@ -1,0 +1,26 @@
+{% if site %}
+{% comment %}
+Branding tokens from Settings. Included by base.html and by the standalone
+sign-in page so both follow the college's colours.
+
+`:root:root` (0,2,0) deliberately: it must outrank the light/dark theme blocks,
+but must NOT outrank the print block's `:root:root:root` (0,3,0) - printouts
+stay black on white whatever the college colours are.
+{% endcomment %}
+<style>
+  :root:root {
+    --brand-500: {{ site.brand_color }};
+    --brand-600: {{ site.brand_color }};
+    --brand-700: color-mix(in srgb, {{ site.brand_color }} 82%, black);
+    --brand-800: color-mix(in srgb, {{ site.brand_color }} 62%, black);
+    --brand-100: color-mix(in srgb, {{ site.brand_color }} 22%, white);
+    --brand-50:  color-mix(in srgb, {{ site.brand_color }} 10%, white);
+    --accent:    {{ site.accent_color }};
+  }
+  :root[data-theme="dark"]:root, :root:not([data-theme="light"]):root {
+    --brand-50: color-mix(in srgb, {{ site.brand_color }} 18%, black);
+    --brand-100: color-mix(in srgb, {{ site.brand_color }} 28%, black);
+    --brand-800: color-mix(in srgb, {{ site.brand_color }} 34%, black);
+  }
+</style>
+{% endif %}

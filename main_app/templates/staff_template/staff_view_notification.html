@@ -1,0 +1,29 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Notifications</h3>
+        <span class="result-count">{{ notifications|length }} message{{ notifications|length|pluralize }}</span>
+    </div>
+    {% if notifications %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th style="width:180px">Received</th><th>Message</th></tr></thead>
+            <tbody>
+                {% for note in notifications %}
+                <tr>
+                    <td class="nowrap text-muted">{{ note.created_at|date:"j M Y, H:i" }}</td>
+                    <td>{{ note.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty"><i class="far fa-bell"></i>
+        <h3>No notifications</h3>
+        <p>Notices sent by the office will appear here.</p></div>
+    {% endif %}
+</div>
+{% endblock content %}

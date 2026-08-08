@@ -1,0 +1,125 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in &middot; {{ site.short_name|default:"E-Navajyothi" }}</title>
+    <link rel="icon" type="image/png"
+          href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
+
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('enj-theme') || "{{ site.default_theme|default:'system' }}";
+          if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'dist/css/enj.css' %}?v=4">
+    {% include "main_app/_branding.html" %}
+
+    <style>
+        .signin {
+            min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
+            background: var(--ground);
+            {% if site.login_background %}
+            background-image: linear-gradient(rgba(8,16,20,.55), rgba(8,16,20,.72)),
+                              url('{{ site.login_background.url }}');
+            {% else %}
+            background-image: linear-gradient(rgba(8,16,20,.55), rgba(8,16,20,.72)),
+                              url('{% static 'dist/img/IMG3-scaled.jpg' %}');
+            {% endif %}
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+        .signin__card {
+            width: 100%; max-width: 400px;
+            background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
+            padding: 1.9rem 1.7rem 1.5rem;
+        }
+        .signin__brand { text-align: center; margin-bottom: 1.4rem; }
+        .signin__brand img {
+            width: 64px; height: 64px; object-fit: contain; margin-bottom: .6rem;
+        }
+        .signin__name { font-size: 1.22rem; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+        .signin__college { font-size: .85rem; color: var(--muted); margin: .15rem 0 0; }
+        .signin__tagline {
+            font-size: .74rem; color: var(--muted); margin: .35rem 0 0;
+            text-transform: uppercase; letter-spacing: .09em;
+        }
+        .field { position: relative; margin-bottom: .85rem; }
+        .field input { padding-left: 2.3rem; height: 42px; }
+        .field i {
+            position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+            color: var(--muted); font-size: .88rem; pointer-events: none;
+        }
+        .signin__row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: .6rem; margin: .9rem 0 1rem; font-size: .84rem;
+        }
+        .signin__foot {
+            margin-top: 1.2rem; padding-top: .9rem; border-top: 1px solid var(--line-soft);
+            text-align: center; font-size: .8rem; color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+<main class="signin">
+    <div class="signin__card">
+        <div class="signin__brand">
+            <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}" alt="">
+            <h1 class="signin__name">{{ site.short_name|default:"E-Navajyothi" }}</h1>
+            <p class="signin__college">{{ site.college_name|default:"Navajyothi College" }}{% if site.city %}, {{ site.city }}{% endif %}</p>
+            {% if site.tagline %}<p class="signin__tagline">{{ site.tagline }}</p>{% endif %}
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form action="{% url 'user_login' %}" method="post">
+            {% csrf_token %}
+            <div class="field">
+                <i class="fas fa-envelope"></i>
+                <input required type="email" name="email" class="form-control"
+                       placeholder="Email address" autocomplete="username" autofocus>
+            </div>
+            <div class="field">
+                <i class="fas fa-lock"></i>
+                <input required type="password" name="password" class="form-control"
+                       placeholder="Password" autocomplete="current-password">
+            </div>
+
+            <div class="signin__row">
+                <a href="{% url 'password_reset' %}">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in</button>
+        </form>
+
+        <div class="signin__foot">
+            {% if site.fee_payment_url %}
+                <a href="{{ site.fee_payment_url }}" class="btn btn-sm" rel="noopener" target="_blank">
+                    <i class="fas fa-credit-card"></i> Pay your fee
+                </a>
+                <div style="margin-top:.7rem"></div>
+            {% endif %}
+            {% if site.phone or site.email %}
+                Need help? {% if site.phone %}{{ site.phone }}{% endif %}
+                {% if site.phone and site.email %}&middot;{% endif %}
+                {% if site.email %}<a href="mailto:{{ site.email }}">{{ site.email }}</a>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+</main>
+</body>
+</html>

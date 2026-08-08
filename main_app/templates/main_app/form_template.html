@@ -1,0 +1,54 @@
+{% comment %}
+Shared form body, included by every Add/Edit page.
+
+Fields are laid out two-per-row on wider screens; textareas, file inputs and
+anything explicitly listed in `wide_fields` take a full row. Errors render
+under the control they belong to rather than above the label.
+{% endcomment %}
+<form role="form" method="POST" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="card-body" style="padding-bottom:0">
+        <div class="alert alert-danger">
+            <span>
+                {% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card-body">
+        <div class="row">
+            {% for field in form %}
+            <div class="{% if field.field.widget.input_type == 'file' or field.name == 'address' or field.name == 'message' or field.name == 'feedback' or field.name == 'name' %}col-12{% else %}col-md-6{% endif %}">
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}" {% if field.field.required %}class="required"{% endif %}>
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <ul class="errorlist">
+                            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card-footer d-flex align-items-center gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check"></i>
+            {% if button_text %}{{ button_text }}{% else %}Save{% endif %}
+        </button>
+        {% if cancel_url %}
+            <a href="{{ cancel_url }}" class="btn">Cancel</a>
+        {% endif %}
+        <span class="text-muted text-sm ml-auto">Fields marked <span class="required"></span> are required</span>
+    </div>
+</form>

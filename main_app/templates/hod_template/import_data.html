@@ -1,0 +1,164 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+
+{% if done %}
+    {# ---------------------------------------------------------- finished #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Import complete</h3>
+            <div class="card-tools">
+                <a href="{% if kind == 'students' %}{% url 'manage_student' %}{% else %}{% url 'manage_staff' %}{% endif %}"
+                   class="btn btn-sm btn-primary">Back to list</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">{{ created|length }} account{{ created|length|pluralize }} created.
+            Passwords shown below were generated automatically &mdash; this is the only time they are
+            displayed, so save or distribute them now.</p>
+        </div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead><tr><th>Name</th><th>Email</th><th>Password</th></tr></thead>
+                <tbody>
+                    {% for r in created %}
+                    <tr>
+                        <td>{{ r.name }}</td>
+                        <td>{{ r.email }}</td>
+                        <td>
+                            {% if r.generated_password %}
+                                <code>{{ r.generated_password }}</code>
+                            {% else %}
+                                <span class="text-muted">from file</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% elif results %}
+    {# ----------------------------------------------------------- preview #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Preview</h3>
+            <span class="result-count">
+                <span class="badge badge-success">{{ valid_count }} ready</span>
+                {% if invalid_count %}<span class="badge badge-danger">{{ invalid_count }} with problems</span>{% endif %}
+            </span>
+            <div class="card-tools">
+                <a href="" class="btn btn-sm">Start over</a>
+                {% if can_commit %}
+                <form method="post" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirm" value="1">
+                    <input type="hidden" name="payload" value="{{ payload }}">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-check"></i> Import {{ valid_count }} record{{ valid_count|pluralize }}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if invalid_count %}
+        <div class="card-body" style="padding-bottom:0">
+            <div class="alert alert-danger">
+                <span>Nothing has been imported. An import is all-or-nothing, so a single bad row
+                stops the batch &mdash; fix the rows below and upload the file again.</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Line</th><th>Status</th><th>Name</th><th>Email</th><th>Problems</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in results %}
+                    <tr>
+                        <td class="text-muted tabular">{{ r.line_no }}</td>
+                        <td>
+                            {% if r.ok %}<span class="badge badge-success">OK</span>
+                            {% else %}<span class="badge badge-danger">Error</span>{% endif %}
+                        </td>
+                        <td>{{ r.name|default:"&mdash;" }}</td>
+                        <td>{{ r.email|default:"&mdash;" }}</td>
+                        <td>
+                            {% if r.errors %}
+                                <ul class="errorlist">
+                                    {% for e in r.errors %}<li>{{ e }}</li>{% endfor %}
+                                </ul>
+                            {% else %}<span class="text-muted">&mdash;</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% else %}
+    {# ------------------------------------------------------------ upload #}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Upload a CSV file</h3></div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="csv_file">CSV file</label>
+                            <input type="file" name="csv_file" id="csv_file" accept=".csv,text/csv"
+                                   class="form-control" required>
+                        </div>
+                        <p class="text-muted text-sm mb-0">
+                            The file is checked first and shown back to you as a preview.
+                            Nothing is written until you confirm.
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Check file</button>
+                        <a href="{{ sample_url }}" class="btn"><i class="fas fa-download"></i> Download template</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Columns</h3></div>
+                <div class="card-body">
+                    <p class="text-sm text-muted">Required columns are marked. Extra columns are ignored,
+                    and column order does not matter.</p>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for c in columns %}
+                            {% if c in required %}
+                                <span class="badge badge-primary">{{ c }}</span>
+                            {% else %}
+                                <span class="badge">{{ c }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <hr>
+                    <ul class="text-sm text-muted" style="padding-left:1.1rem; margin:0">
+                        <li><strong>department</strong> and <strong>course</strong> are matched by name and must already exist.</li>
+                        {% if kind == 'students' %}
+                        <li><strong>session_start_year</strong> is the batch start year, e.g. <code>2025</code>.</li>
+                        {% endif %}
+                        <li>Dates accept <code>YYYY-MM-DD</code>, <code>DD/MM/YYYY</code> or <code>DD-MM-YYYY</code>.</li>
+                        <li><strong>phone_num</strong> is 10 digits, <strong>aadhar_num</strong> is 12.</li>
+                        <li>Leave <strong>password</strong> blank and one is generated and shown after import.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock content %}

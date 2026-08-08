@@ -1,0 +1,375 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .action-card {
+        display: flex; align-items: center; gap: .9rem;
+        padding: .9rem 1rem; margin-bottom: 1.1rem;
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
+        text-decoration: none; color: inherit;
+        transition: border-color .13s ease, transform .13s ease;
+    }
+    .action-card:hover { border-color: var(--brand-500); text-decoration: none; color: inherit; }
+    .action-card__icon {
+        width: 40px; height: 40px; flex: none; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .action-card__n { font-size: 1.5rem; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+    .action-card__label { font-size: .8rem; color: var(--muted); }
+    .action-card.is-clear .action-card__n { color: var(--muted); }
+    .i-warn { background: var(--warn-soft); color: var(--warn); }
+    .i-bad  { background: var(--bad-soft);  color: var(--bad); }
+    .i-info { background: var(--info-soft); color: var(--info); }
+    .i-ok   { background: var(--ok-soft);   color: var(--ok); }
+    .att-hero { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
+    .att-hero__pct { font-size: 2.6rem; font-weight: 700; letter-spacing: -.025em; line-height: 1; }
+    .mini-list { list-style: none; margin: 0; padding: 0; }
+    .mini-list li {
+        display: flex; gap: .6rem; align-items: baseline;
+        padding: .55rem 0; border-bottom: 1px solid var(--line-soft); font-size: .87rem;
+    }
+    .mini-list li:last-child { border-bottom: 0; }
+    .mini-list .when { margin-left: auto; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+{# ------------------------------------------------- needs attention #}
+<div class="row">
+    <div class="col-md-3 col-6">
+        <a class="action-card {% if not pending_student_leave %}is-clear{% endif %}" href="{% url 'view_student_leave' %}">
+            <span class="action-card__icon {% if pending_student_leave %}i-warn{% else %}i-ok{% endif %}"><i class="fas fa-plane-departure"></i></span>
+            <span><span class="action-card__n">{{ pending_student_leave }}</span>
+                  <span class="action-card__label d-block">Student leave to review</span></span>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a class="action-card {% if not pending_staff_leave %}is-clear{% endif %}" href="{% url 'view_staff_leave' %}">
+            <span class="action-card__icon {% if pending_staff_leave %}i-warn{% else %}i-ok{% endif %}"><i class="fas fa-plane-departure"></i></span>
+            <span><span class="action-card__n">{{ pending_staff_leave }}</span>
+                  <span class="action-card__label d-block">Staff leave to review</span></span>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a class="action-card {% if not unanswered_feedback %}is-clear{% endif %}" href="{% url 'student_feedback_message' %}">
+            <span class="action-card__icon {% if unanswered_feedback %}i-info{% else %}i-ok{% endif %}"><i class="far fa-comment-dots"></i></span>
+            <span><span class="action-card__n">{{ unanswered_feedback }}</span>
+                  <span class="action-card__label d-block">Feedback awaiting reply</span></span>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a class="action-card {% if not defaulter_count %}is-clear{% endif %}" href="#defaulters">
+            <span class="action-card__icon {% if defaulter_count %}i-bad{% else %}i-ok{% endif %}"><i class="fas fa-exclamation-triangle"></i></span>
+            <span><span class="action-card__n">{{ defaulter_count }}</span>
+                  <span class="action-card__label d-block">Below {{ threshold }}% attendance</span></span>
+        </a>
+    </div>
+</div>
+
+{# ------------------------------------------------- attendance + roll #}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">College attendance</h3></div>
+            <div class="card-body">
+                {% if overall_percent is not None %}
+                    <div class="att-hero">
+                        <span class="att-hero__pct {% if attendance_ok %}text-success{% else %}text-danger{% endif %}">{{ overall_percent }}%</span>
+                        <span class="text-muted text-sm">overall</span>
+                    </div>
+                    <div class="meter {% if attendance_ok %}is-ok{% else %}is-bad{% endif %}">
+                        <span style="width: {{ overall_percent }}%"></span>
+                    </div>
+                    <p class="text-muted text-sm mt-2 mb-0">
+                        {{ total_present }} present of {{ total_marked }} marked &middot; requirement {{ threshold }}%
+                    </p>
+                {% else %}
+                    <p class="text-muted mb-0">No attendance recorded yet.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'admin_view_attendance' %}" class="btn btn-sm">View attendance records</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner"><h3>{{ total_students }}</h3><p>Students</p></div>
+                    <div class="icon"><i class="fas fa-user-graduate"></i></div>
+                    <a href="{% url 'manage_student' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner"><h3>{{ total_staff }}</h3><p>Staff</p></div>
+                    <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <a href="{% url 'manage_staff' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner"><h3>{{ total_course }}</h3><p>Courses</p></div>
+                    <div class="icon"><i class="fas fa-book"></i></div>
+                    <a href="{% url 'manage_course' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner"><h3>{{ total_subject }}</h3><p>Subjects</p></div>
+                    <div class="icon"><i class="fas fa-bookmark"></i></div>
+                    <a href="{% url 'manage_subject' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner"><h3>{{ total_department }}</h3><p>Departments</p></div>
+                    <div class="icon"><i class="fas fa-sitemap"></i></div>
+                    <a href="{% url 'manage_department' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="small-box bg-purple">
+                    <div class="inner"><h3>{{ total_session }}</h3><p>Batches</p></div>
+                    <div class="icon"><i class="far fa-calendar-alt"></i></div>
+                    <a href="{% url 'manage_session' %}" class="small-box-footer">Manage <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ------------------------------------------------- charts #}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card no-print">
+            <div class="card-header"><h3 class="card-title">Attendance trend</h3>
+                <span class="result-count">last {{ trend_labels|length }} class days</span></div>
+            <div class="card-body"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card no-print">
+            <div class="card-header"><h3 class="card-title">Students per course</h3></div>
+            <div class="card-body"><div class="chart-box"><canvas id="enrolmentChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card no-print">
+            <div class="card-header"><h3 class="card-title">Attendance by course</h3>
+                <span class="result-count">which cohorts are slipping</span></div>
+            <div class="card-body"><div class="chart-box"><canvas id="courseChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card no-print">
+            <div class="card-header"><h3 class="card-title">Staff per department</h3></div>
+            <div class="card-body"><div class="chart-box"><canvas id="deptChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+{# ------------------------------------------------- defaulters #}
+<div class="card" id="defaulters">
+    <div class="card-header">
+        <h3 class="card-title">Attendance shortfall</h3>
+        <span class="result-count">
+            {% if defaulter_count %}{{ defaulter_count }} student{{ defaulter_count|pluralize }} below {{ threshold }}%{% endif %}
+        </span>
+    </div>
+    {% if defaulters %}
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Student</th><th>Register no</th><th>Course</th>
+                    <th class="text-right">Present</th><th class="text-right">Classes</th>
+                    <th style="min-width:170px">Attendance</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for row in defaulters %}
+                <tr>
+                    <td><strong>{{ row.student.admin.first_name }} {{ row.student.admin.last_name }}</strong></td>
+                    <td class="nowrap">{{ row.student.register_num|default:"&mdash;" }}</td>
+                    <td>{{ row.student.course.name|default:"&mdash;" }}</td>
+                    <td class="text-right">{{ row.present }}</td>
+                    <td class="text-right">{{ row.total }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="meter is-bad" style="flex:1"><span style="width: {{ row.percent }}%"></span></div>
+                            <span class="tabular text-sm text-danger">{{ row.percent }}%</span>
+                        </div>
+                    </td>
+                    <td class="nowrap"><a href="{% url 'view_profile' row.student.id %}" class="btn btn-sm">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if defaulter_count > 10 %}
+    <div class="card-footer text-muted text-sm">Showing the 10 lowest of {{ defaulter_count }}.</div>
+    {% endif %}
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-check-circle"></i>
+        <h3>Everyone is above {{ threshold }}%</h3>
+        <p>No student is currently short of the attendance requirement.</p>
+    </div>
+    {% endif %}
+</div>
+
+{# ------------------------------------------------- recent activity #}
+<div class="row">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Recent classes</h3></div>
+            <div class="card-body">
+                {% if recent_attendance %}
+                <ul class="mini-list">
+                    {% for att in recent_attendance %}
+                    <li>
+                        <span><strong>{{ att.subject.name }}</strong>
+                            <span class="text-muted">&middot; {{ att.subject.course.name }}</span><br>
+                            <span class="text-muted text-sm">taken by {{ att.subject.staff.admin.first_name }} {{ att.subject.staff.admin.last_name }}</span>
+                        </span>
+                        <span class="when">{{ att.date|date:"j M Y" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No attendance has been taken yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Recently added students</h3>
+                <div class="card-tools"><a href="{% url 'import_students' %}" class="btn btn-sm">Import CSV</a></div></div>
+            <div class="card-body">
+                {% if recent_students %}
+                <ul class="mini-list">
+                    {% for s in recent_students %}
+                    <li>
+                        <span><a href="{% url 'view_profile' s.id %}">{{ s.admin.first_name }} {{ s.admin.last_name }}</a><br>
+                            <span class="text-muted text-sm">{{ s.course.name|default:"No course" }}</span></span>
+                        <span class="when">{{ s.register_num|default:"" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No students yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+{{ trend_labels|json_script:"trend-labels" }}
+{{ trend_percents|json_script:"trend-percents" }}
+{{ course_labels|json_script:"course-labels" }}
+{{ course_percents|json_script:"course-percents" }}
+{{ enrolment_labels|json_script:"enrolment-labels" }}
+{{ enrolment_counts|json_script:"enrolment-counts" }}
+{{ department_labels|json_script:"department-labels" }}
+{{ department_counts|json_script:"department-counts" }}
+<script>
+(function () {
+  var read = function (id) { return JSON.parse(document.getElementById(id).textContent); };
+  var css  = getComputedStyle(document.documentElement);
+  var tok  = function (n) { return css.getPropertyValue(n).trim(); };
+
+  var brand = tok('--brand-600') || '#0d6b7c';
+  var ok    = tok('--ok')    || '#137a52';
+  var bad   = tok('--bad')   || '#a52f26';
+  var line  = tok('--line')  || '#dbe4e7';
+  var muted = tok('--muted') || '#647880';
+  var threshold = {{ threshold }};
+
+  Chart.defaults.global.defaultFontColor = muted;
+  Chart.defaults.global.defaultFontFamily = css.getPropertyValue('--sans') || 'sans-serif';
+
+  var palette = [brand, ok, tok('--accent') || '#b8802a', tok('--info') || '#1668a5',
+                 bad, '#6b7fd7', '#3f9c8f', '#a8619a'];
+
+  var gridCfg = { gridLines: { color: line, zeroLineColor: line, drawBorder: false } };
+
+  // Attendance trend
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: read('trend-labels'),
+      datasets: [{
+        label: 'Attendance %', data: read('trend-percents'),
+        borderColor: brand, backgroundColor: 'rgba(13,107,124,.12)',
+        pointBackgroundColor: brand, pointRadius: 3, borderWidth: 2, fill: true, lineTension: .3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      legend: { display: false },
+      scales: {
+        yAxes: [Object.assign({ ticks: { beginAtZero: true, max: 100, callback: function (v) { return v + '%'; } } }, gridCfg)],
+        xAxes: [{ gridLines: { display: false } }]
+      }
+    }
+  });
+
+  // Attendance by course
+  var coursePcts = read('course-percents');
+  new Chart(document.getElementById('courseChart'), {
+    type: 'horizontalBar',
+    data: {
+      labels: read('course-labels'),
+      datasets: [{
+        label: 'Attendance %', data: coursePcts,
+        backgroundColor: coursePcts.map(function (p) { return p < threshold ? bad : ok; }),
+        borderWidth: 0, barPercentage: .6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      legend: { display: false },
+      scales: {
+        xAxes: [Object.assign({ ticks: { beginAtZero: true, max: 100, callback: function (v) { return v + '%'; } } }, gridCfg)],
+        yAxes: [{ gridLines: { display: false } }]
+      }
+    }
+  });
+
+  // Students per course
+  new Chart(document.getElementById('enrolmentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: read('enrolment-labels'),
+      datasets: [{ data: read('enrolment-counts'), backgroundColor: palette, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutoutPercentage: 62,
+               legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }
+  });
+
+  // Staff per department
+  new Chart(document.getElementById('deptChart'), {
+    type: 'doughnut',
+    data: {
+      labels: read('department-labels'),
+      datasets: [{ data: read('department-counts'), backgroundColor: palette, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutoutPercentage: 62,
+               legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }
+  });
+})();
+</script>
+{% endblock custom_js %}

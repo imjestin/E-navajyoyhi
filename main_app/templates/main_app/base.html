@@ -1,0 +1,142 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page_title %}{{ page_title }} &middot; {% endif %}{{ site.short_name|default:"E-Navajyothi" }}</title>
+    <link rel="icon" type="image/png" href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
+
+    {# Theme is applied before first paint so the page never flashes the wrong ground. #}
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('enj-theme');
+          if (!t) t = "{{ site.default_theme|default:'system' }}";
+          if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+    {% comment %}
+    Bump ?v= when editing enj.css so browsers pick the change up in dev.
+    In production ManifestStaticFilesStorage hashes the filename instead.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'dist/css/enj.css' %}?v=4">
+
+    {% include "main_app/_branding.html" %}
+
+    {% block custom_css %}{% endblock custom_css %}
+</head>
+
+<body>
+<div class="app">
+
+    {% include "main_app/sidebar_template.html" with user=user %}
+    <div class="scrim" data-rail-close></div>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="icon-btn rail-toggle" type="button" data-rail-toggle aria-label="Open navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="topbar__title">{% block page_title %}{{ page_title }}{% endblock page_title %}</h1>
+
+            <div class="topbar__spacer"></div>
+
+            <button class="icon-btn" type="button" data-theme-toggle
+                    aria-label="Switch between light and dark theme" title="Switch theme">
+                <i class="fas fa-moon" data-theme-icon></i>
+            </button>
+
+            <div class="user-chip">
+                {% if request.user.profile_pic %}
+                    <img src="{{ request.user.profile_pic }}" alt="">
+                {% else %}
+                    <span class="avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</span>
+                {% endif %}
+                <span class="d-none d-md-block">
+                    <span class="user-chip__name d-block">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+                    <span class="user-chip__role">
+                        {% if request.user.user_type == '1' %}Administrator
+                        {% elif request.user.user_type == '2' %}Staff
+                        {% else %}Student{% endif %}
+                    </span>
+                </span>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="container-fluid">
+
+                {# Letterhead: hidden on screen, printed at the top of every page. #}
+                <div class="print-head print-only">
+                    <div class="print-head__org">{{ site.college_name|default:"Navajyothi College" }}{% if site.city %}, {{ site.city }}{% endif %}</div>
+                    {% if site.affiliated_to %}<div class="print-head__meta">Affiliated to {{ site.affiliated_to }}</div>{% endif %}
+                    <div class="print-head__title">{{ page_title }}</div>
+                    <div class="print-head__meta">
+                        Printed {% now "j F Y" %} at {% now "H:i" %}
+                        &middot; by {{ request.user.first_name }} {{ request.user.last_name }}
+                    </div>
+                </div>
+
+
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock content %}
+            </div>
+        </main>
+
+        {% include "main_app/footer.html" %}
+    </div>
+</div>
+
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+
+  function currentTheme() {
+    var set = root.getAttribute('data-theme');
+    if (set) return set;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function paintIcon() {
+    var icon = document.querySelector('[data-theme-icon]');
+    if (!icon) return;
+    var dark = currentTheme() === 'dark';
+    icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-theme-toggle]')) {
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('enj-theme', next); } catch (err) {}
+      paintIcon();
+    }
+    if (e.target.closest('[data-rail-toggle]')) document.body.classList.toggle('rail-open');
+    if (e.target.closest('[data-rail-close]')) document.body.classList.remove('rail-open');
+  });
+  paintIcon();
+
+  // Mark the current page in the sidebar.
+  var here = window.location.pathname;
+  document.querySelectorAll('.rail__link').forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (href && href !== '/' && here.indexOf(href) === 0) a.classList.add('is-active');
+    else if (href === here) a.classList.add('is-active');
+  });
+})();
+</script>
+{% block custom_js %}{% endblock custom_js %}
+</body>
+</html>

@@ -1,0 +1,448 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ site.college_name|default:"Navajyothi College" }}{% if site.city %} &middot; {{ site.city }}{% endif %}</title>
+    <meta name="description" content="{{ site.college_name }}{% if site.city %}, {{ site.city }}{% endif %}. {{ site.tagline|default:'' }}">
+    <link rel="icon" type="image/png"
+          href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+
+    {% comment %}
+    The public site commits to one dark look on purpose - it is a brochure, not
+    the portal - so it does not follow the viewer's light/dark preference. Every
+    colour is declared here rather than inherited from the app stylesheet.
+    {% endcomment %}
+    <style>
+        :root {
+            --ink:      #07090b;
+            --ink-2:    #0e1216;
+            --paper:    #ffffff;
+            --muted:    #9aa4ad;
+            --line:     rgba(255,255,255,.14);
+            --brand:    {{ site.brand_color|default:"#0d6b7c" }};
+            --accent:   {{ site.accent_color|default:"#b8802a" }};
+            --c1: #1e5f9e;   /* duotone tints for the circle stats */
+            --c2: #e5a012;
+            --c3: #5b6672;
+            --c4: #1f7a72;
+            --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                    "Helvetica Neue", Arial, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0; background: var(--ink); color: var(--paper);
+            font-family: var(--sans); line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+        img { max-width: 100%; display: block; }
+        a { color: inherit; text-decoration: none; }
+        .wrap { max-width: 1240px; margin: 0 auto; padding: 0 2rem; }
+        @media (max-width: 700px) { .wrap { padding: 0 1.15rem; } }
+
+        /* --- Top bar: light, sticky, over a dark page -------------------- */
+        .topbar {
+            position: sticky; top: 0; z-index: 50; background: var(--paper);
+            display: flex; align-items: center; gap: 1rem;
+            padding: .85rem 2rem; box-shadow: 0 1px 0 rgba(0,0,0,.08);
+        }
+        .topbar__brand { display: flex; align-items: center; gap: .65rem; }
+        .topbar__brand img { width: 42px; height: 42px; object-fit: contain; }
+        .topbar__brand span {
+            color: #0b0d10; font-weight: 800; font-size: 1.12rem; letter-spacing: -.02em;
+            line-height: 1.05;
+        }
+        .topbar__brand small {
+            display: block; font-size: .6rem; font-weight: 600; letter-spacing: .14em;
+            text-transform: uppercase; color: #6b7480;
+        }
+        .topnav { margin-left: auto; display: flex; align-items: center; gap: .35rem; }
+        .topnav a {
+            color: #22282f; font-size: .93rem; padding: .5rem .8rem; border-radius: 6px;
+        }
+        .topnav a:hover { color: var(--brand); }
+        .topnav .cta {
+            background: var(--ink); color: #fff; padding: .58rem 1.15rem;
+            border-radius: 999px; font-weight: 600; font-size: .9rem;
+        }
+        .topnav .cta:hover { background: var(--brand); color: #fff; }
+        .navtoggle {
+            display: none; margin-left: auto; background: none; border: 0;
+            font-size: 1.25rem; color: #0b0d10; cursor: pointer;
+        }
+        @media (max-width: 900px) {
+            .navtoggle { display: block; }
+            .topnav {
+                display: none; position: absolute; top: 100%; left: 0; right: 0;
+                background: var(--paper); flex-direction: column; align-items: stretch;
+                padding: .6rem 1.15rem 1rem; box-shadow: 0 12px 24px rgba(0,0,0,.18);
+            }
+            .topnav.is-open { display: flex; }
+            .topnav .cta { text-align: center; margin-top: .4rem; }
+        }
+
+        /* --- Hero -------------------------------------------------------- */
+        .hero { position: relative; min-height: 82vh; display: flex; align-items: flex-end; }
+        .hero__media { position: absolute; inset: 0; overflow: hidden; }
+        .hero__media img { width: 100%; height: 100%; object-fit: cover; }
+        .hero__media::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(7,9,11,.35) 0%, rgba(7,9,11,.55) 45%, rgba(7,9,11,.96) 100%);
+        }
+        .hero__body { position: relative; width: 100%; padding: 6rem 0 0; }
+        .hero__eyebrow {
+            font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+            color: rgba(255,255,255,.82); margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-size: clamp(2.6rem, 8.2vw, 6.6rem);
+            line-height: .92; letter-spacing: -.035em; font-weight: 800;
+            text-transform: uppercase; margin: 0 0 1rem; max-width: 15ch;
+        }
+        .hero p {
+            font-size: clamp(1rem, 1.7vw, 1.22rem); color: rgba(255,255,255,.86);
+            max-width: 46ch; margin: 0 0 2.2rem;
+        }
+        /* Quick links strip, thin rule above each */
+        .quick {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+            border-top: 1px solid var(--line); margin-top: 2.5rem;
+        }
+        .quick a {
+            padding: 1.15rem 1.2rem 1.6rem 0; font-size: .98rem; font-weight: 500;
+            border-top: 3px solid transparent; margin-top: -1px;
+            display: flex; align-items: center; gap: .5rem; transition: border-color .18s, color .18s;
+        }
+        .quick a:hover { border-top-color: var(--accent); color: #fff; }
+        .quick i { font-size: .78rem; opacity: .7; }
+        @media (max-width: 860px) { .quick { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 460px) { .quick { grid-template-columns: 1fr; } }
+
+        /* --- Statement --------------------------------------------------- */
+        .statement { padding: 6rem 0 4rem; }
+        .statement__grid {
+            display: grid; grid-template-columns: 1fr 1.25fr; gap: 3rem; align-items: start;
+        }
+        @media (max-width: 900px) { .statement__grid { grid-template-columns: 1fr; gap: 2rem; } }
+        .bignum__label { color: var(--muted); font-size: 1.05rem; margin-bottom: .3rem; }
+        .bignum__value {
+            display: flex; align-items: flex-start; gap: .4rem;
+            font-size: clamp(3.4rem, 9vw, 7rem); font-weight: 800;
+            letter-spacing: -.045em; line-height: .9;
+        }
+        .bignum__value i { font-size: .3em; color: var(--accent); transform: translateY(.35em); }
+        .statement h2 {
+            font-size: clamp(1.5rem, 3.3vw, 2.6rem); line-height: 1.18;
+            letter-spacing: -.02em; font-weight: 600; margin: 0 0 1.1rem;
+        }
+        .statement p { color: var(--muted); max-width: 52ch; margin: 0 0 1.8rem; }
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: .7rem;
+            border: 1px solid rgba(255,255,255,.7); padding: .85rem 1.6rem;
+            font-weight: 600; font-size: .98rem; transition: background .18s, color .18s;
+        }
+        .btn-outline:hover { background: #fff; color: var(--ink); }
+
+        /* --- Circle stats ------------------------------------------------ */
+        .circles {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+            padding-bottom: 5rem;
+        }
+        @media (max-width: 900px) { .circles { grid-template-columns: repeat(2, 1fr); gap: 1rem; } }
+        @media (max-width: 520px) { .circles { grid-template-columns: 1fr; } }
+        .circle { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
+        .circle__art {
+            position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+            background: var(--tint);
+        }
+        .circle__art img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(1) contrast(1.08);
+        }
+        .circle__art::after {
+            content: ""; position: absolute; inset: 0;
+            background: var(--tint); mix-blend-mode: multiply; opacity: .88;
+        }
+        .circle__inner { position: relative; text-align: center; padding: 1rem; }
+        .circle__inner i { font-size: 1.6rem; opacity: .9; margin-bottom: .5rem; display: block; }
+        .circle__n {
+            font-size: clamp(2rem, 4.2vw, 3.2rem); font-weight: 800;
+            letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums;
+        }
+        .circle__label { font-size: .92rem; color: rgba(255,255,255,.88); margin-top: .35rem; }
+
+        /* --- Programmes -------------------------------------------------- */
+        .programmes { padding: 5rem 0 6rem; background: var(--ink-2); }
+        .gradient-head {
+            font-size: clamp(2rem, 6vw, 4.4rem); font-weight: 800; text-transform: uppercase;
+            letter-spacing: -.035em; line-height: .96; margin: 0 0 2.6rem; max-width: 16ch;
+            background: linear-gradient(100deg, #63d2e0 0%, #7fe0a8 55%, #cfe86a 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .prog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+        @media (max-width: 940px) { .prog-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .prog-grid { grid-template-columns: 1fr; } }
+        .prog {
+            border: 1px solid var(--line); border-radius: 18px; padding: 1.5rem 1.4rem;
+            background: rgba(255,255,255,.026); transition: border-color .18s, transform .18s;
+        }
+        .prog:hover { border-color: rgba(255,255,255,.4); transform: translateY(-3px); }
+        .prog__dept {
+            font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+            color: var(--accent); font-weight: 700; margin-bottom: .7rem;
+        }
+        .prog ul { list-style: none; margin: 0; padding: 0; }
+        .prog li {
+            padding: .5rem 0; border-bottom: 1px solid rgba(255,255,255,.08);
+            font-size: 1rem; display: flex; align-items: center; gap: .6rem;
+        }
+        .prog li:last-child { border-bottom: 0; }
+        .prog li i { font-size: .62rem; color: var(--accent); }
+        .prog .none { color: var(--muted); font-size: .92rem; padding: .5rem 0; }
+
+        /* --- Contact / footer -------------------------------------------- */
+        .contact { padding: 5rem 0; }
+        .contact__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+        @media (max-width: 860px) { .contact__grid { grid-template-columns: 1fr; gap: 2rem; } }
+        .contact h2 {
+            font-size: clamp(1.8rem, 4.5vw, 3rem); text-transform: uppercase; font-weight: 800;
+            letter-spacing: -.03em; line-height: 1; margin: 0 0 1rem;
+        }
+        .contact__list { display: grid; gap: 1.35rem; }
+        .contact__label {
+            font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+            color: var(--muted); font-weight: 700; margin-bottom: .2rem;
+        }
+        .contact__value { font-size: 1.02rem; overflow-wrap: anywhere; }
+        .contact__value a:hover { color: var(--accent); }
+
+        .foot {
+            border-top: 1px solid var(--line); padding: 1.6rem 0;
+            color: var(--muted); font-size: .88rem;
+        }
+        .foot__row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+        .foot__row .right { margin-left: auto; }
+        .foot a:hover { color: #fff; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            * { transition: none !important; }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+    <a class="topbar__brand" href="{% url 'landing' %}">
+        <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}" alt="">
+        <span>{{ site.short_name|default:"E-Navajyothi" }}
+            {% if site.affiliated_to %}<small>{{ site.affiliated_to }}</small>{% endif %}
+        </span>
+    </a>
+    <button class="navtoggle" type="button" aria-label="Menu" data-navtoggle><i class="fas fa-bars"></i></button>
+    <nav class="topnav" data-nav>
+        <a href="#programmes">Programmes</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        {% if site.fee_payment_url %}<a href="{{ site.fee_payment_url }}" target="_blank" rel="noopener">Pay fee</a>{% endif %}
+        <a class="cta" href="{% url 'login_page' %}">Portal sign in</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <div class="hero__media">
+        <img src="{% if site.login_background %}{{ site.login_background.url }}{% else %}{% static 'dist/img/IMG3-scaled.jpg' %}{% endif %}" alt="">
+    </div>
+    <div class="hero__body">
+        <div class="wrap">
+            {% if site.affiliated_to %}<div class="hero__eyebrow">Affiliated to {{ site.affiliated_to }}</div>{% endif %}
+            <h1>{{ site.college_name|default:"Navajyothi College" }}</h1>
+            <p>
+                {% if site.tagline %}{{ site.tagline }}.{% endif %}
+                Undergraduate study across {{ total_departments }} department{{ total_departments|pluralize }}
+                {% if site.city %}in {{ site.city }}{% if site.district %}, {{ site.district }}{% endif %}{% endif %}.
+            </p>
+
+            <div class="quick">
+                <a href="#programmes">Find your programme <i class="fas fa-external-link-alt"></i></a>
+                <a href="{% url 'login_page' %}">Student &amp; staff portal <i class="fas fa-arrow-right"></i></a>
+                {% if site.fee_payment_url %}
+                    <a href="{{ site.fee_payment_url }}" target="_blank" rel="noopener">Pay your fee <i class="fas fa-arrow-right"></i></a>
+                {% else %}
+                    <a href="#about">About the college <i class="fas fa-arrow-right"></i></a>
+                {% endif %}
+                <a href="#contact">Contact the office <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="statement" id="about">
+    <div class="wrap statement__grid">
+        <div>
+            <div class="bignum__label">Students on roll</div>
+            <div class="bignum__value">
+                <span data-count="{{ total_students }}">0</span><i class="fas fa-long-arrow-alt-up"></i>
+            </div>
+        </div>
+        <div>
+            <h2>A college built around teaching, attendance and results that students and staff can see.</h2>
+            <p>
+                {{ site.college_name|default:"The college" }} runs {{ total_courses }} programme{{ total_courses|pluralize }}
+                across {{ total_departments }} department{{ total_departments|pluralize }}, taught by
+                {{ total_staff }} member{{ total_staff|pluralize }} of staff. Attendance, internal marks and
+                results are recorded in the college portal and are available to every student.
+            </p>
+            <a class="btn-outline" href="{% url 'login_page' %}">
+                Open the portal <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="wrap">
+    <div class="circles">
+        <div class="circle" style="--tint: var(--c1)">
+            <div class="circle__art">
+                <img src="{% if site.login_background %}{{ site.login_background.url }}{% else %}{% static 'dist/img/IMG3-scaled.jpg' %}{% endif %}" alt="">
+            </div>
+            <div class="circle__inner">
+                <i class="fas fa-user-graduate"></i>
+                <div class="circle__n" data-count="{{ total_students }}">0</div>
+                <div class="circle__label">Students</div>
+            </div>
+        </div>
+        <div class="circle" style="--tint: var(--c2)">
+            <div class="circle__art">
+                <img src="{% if site.login_background %}{{ site.login_background.url }}{% else %}{% static 'dist/img/IMG3-scaled.jpg' %}{% endif %}" alt="">
+            </div>
+            <div class="circle__inner">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <div class="circle__n" data-count="{{ total_staff }}">0</div>
+                <div class="circle__label">Teaching staff</div>
+            </div>
+        </div>
+        <div class="circle" style="--tint: var(--c3)">
+            <div class="circle__art">
+                <img src="{% if site.login_background %}{{ site.login_background.url }}{% else %}{% static 'dist/img/IMG3-scaled.jpg' %}{% endif %}" alt="">
+            </div>
+            <div class="circle__inner">
+                <i class="fas fa-book"></i>
+                <div class="circle__n" data-count="{{ total_courses }}">0</div>
+                <div class="circle__label">Programmes</div>
+            </div>
+        </div>
+        <div class="circle" style="--tint: var(--c4)">
+            <div class="circle__art">
+                <img src="{% if site.login_background %}{{ site.login_background.url }}{% else %}{% static 'dist/img/IMG3-scaled.jpg' %}{% endif %}" alt="">
+            </div>
+            <div class="circle__inner">
+                <i class="fas fa-sitemap"></i>
+                <div class="circle__n" data-count="{{ total_departments }}">0</div>
+                <div class="circle__label">Departments</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="programmes" id="programmes">
+    <div class="wrap">
+        <h2 class="gradient-head">Explore our programmes</h2>
+        {% if departments %}
+        <div class="prog-grid">
+            {% for dept in departments %}
+            <article class="prog">
+                <div class="prog__dept">{{ dept.name }}</div>
+                <ul>
+                    {% for course in dept.course_set.all %}
+                        <li><i class="fas fa-circle"></i> {{ course.name }}</li>
+                    {% empty %}
+                        <li class="none">Programmes to be announced.</li>
+                    {% endfor %}
+                </ul>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--muted)">Departments added in the portal appear here automatically.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="contact" id="contact">
+    <div class="wrap contact__grid">
+        <div>
+            <h2>Get in touch</h2>
+            <p style="color: var(--muted); max-width: 40ch">
+                Enquiries about admissions, transfer certificates and fee payment are handled by
+                the college office.
+            </p>
+            {% if site.fee_payment_url %}
+            <a class="btn-outline" href="{{ site.fee_payment_url }}" target="_blank" rel="noopener">
+                Pay your fee <i class="fas fa-external-link-alt"></i>
+            </a>
+            {% endif %}
+        </div>
+        <div class="contact__list">
+            {% if site.full_address %}
+            <div><div class="contact__label">Address</div><div class="contact__value">{{ site.full_address }}</div></div>
+            {% endif %}
+            {% if site.phone %}
+            <div><div class="contact__label">Phone</div><div class="contact__value"><a href="tel:{{ site.phone }}">{{ site.phone }}</a></div></div>
+            {% endif %}
+            {% if site.email %}
+            <div><div class="contact__label">Email</div><div class="contact__value"><a href="mailto:{{ site.email }}">{{ site.email }}</a></div></div>
+            {% endif %}
+            {% if site.website %}
+            <div><div class="contact__label">Website</div><div class="contact__value"><a href="{{ site.website }}" target="_blank" rel="noopener">{{ site.website }}</a></div></div>
+            {% endif %}
+            {% if site.principal_name %}
+            <div><div class="contact__label">Principal</div><div class="contact__value">{{ site.principal_name }}</div></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<footer class="foot">
+    <div class="wrap foot__row">
+        <span>&copy; {% now "Y" %} {{ site.college_name|default:"Navajyothi College" }}</span>
+        {% if site.footer_note %}<span>{{ site.footer_note }}</span>{% endif %}
+        <span class="right"><a href="{% url 'login_page' %}">Portal sign in</a></span>
+    </div>
+</footer>
+
+<script>
+(function () {
+  var toggle = document.querySelector('[data-navtoggle]');
+  var nav = document.querySelector('[data-nav]');
+  if (toggle) toggle.addEventListener('click', function () { nav.classList.toggle('is-open'); });
+
+  // Count up when a figure scrolls into view; static if reduced motion is set.
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var targets = document.querySelectorAll('[data-count]');
+  if (reduce || !('IntersectionObserver' in window)) {
+    targets.forEach(function (el) { el.textContent = el.dataset.count; });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target, end = parseInt(el.dataset.count, 10) || 0, start = null;
+      io.unobserve(el);
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / 900, 1);
+        el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }, { threshold: .4 });
+  targets.forEach(function (el) { io.observe(el); });
+})();
+</script>
+</body>
+</html>

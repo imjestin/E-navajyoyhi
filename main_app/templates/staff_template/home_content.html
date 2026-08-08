@@ -1,0 +1,242 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .att-hero { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
+    .att-hero__pct { font-size: 2.4rem; font-weight: 700; letter-spacing: -.025em; line-height: 1; }
+    .mini-list { list-style: none; margin: 0; padding: 0; }
+    .mini-list li {
+        display: flex; gap: .6rem; align-items: baseline;
+        padding: .55rem 0; border-bottom: 1px solid var(--line-soft); font-size: .87rem;
+    }
+    .mini-list li:last-child { border-bottom: 0; }
+    .mini-list .when { margin-left: auto; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner"><h3>{{ total_students }}</h3><p>Students taught</p></div>
+            <div class="icon"><i class="fas fa-user-graduate"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner"><h3>{{ total_subject }}</h3><p>My subjects</p></div>
+            <div class="icon"><i class="fas fa-bookmark"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner"><h3>{{ total_classes }}</h3><p>Classes held</p></div>
+            <div class="icon"><i class="fas fa-clipboard-check"></i></div>
+            <a href="{% url 'staff_take_attendance' %}" class="small-box-footer">Take attendance <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner"><h3>{{ defaulter_count }}</h3><p>Below {{ threshold }}%</p></div>
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <a href="#shortfall" class="small-box-footer">See who <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">My class attendance</h3></div>
+            <div class="card-body">
+                {% if overall_percent is not None %}
+                    <div class="att-hero">
+                        <span class="att-hero__pct {% if attendance_ok %}text-success{% else %}text-danger{% endif %}">{{ overall_percent }}%</span>
+                        <span class="text-muted text-sm">across all my subjects</span>
+                    </div>
+                    <div class="meter {% if attendance_ok %}is-ok{% else %}is-bad{% endif %}">
+                        <span style="width: {{ overall_percent }}%"></span>
+                    </div>
+                    <p class="text-muted text-sm mt-2 mb-0">Requirement is {{ threshold }}%.</p>
+                {% else %}
+                    <p class="text-muted mb-0">You have not recorded any attendance yet.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer d-flex gap-1 flex-wrap">
+                <a href="{% url 'staff_take_attendance' %}" class="btn btn-sm btn-primary">Take attendance</a>
+                <a href="{% url 'attendance_report' %}" class="btn btn-sm">Download report</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">My requests</h3></div>
+            <div class="card-body">
+                <ul class="mini-list">
+                    <li>Leave applications <span class="when">{{ total_leave }}</span></li>
+                    <li>Awaiting a decision <span class="when">{{ pending_leave }}</span></li>
+                    <li>Notifications received <span class="when">{{ unread_notifications }}</span></li>
+                </ul>
+            </div>
+            <div class="card-footer d-flex gap-1 flex-wrap">
+                <a href="{% url 'staff_apply_leave' %}" class="btn btn-sm">Apply for leave</a>
+                <a href="{% url 'staff_view_notification' %}" class="btn btn-sm">Notifications</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card no-print">
+            <div class="card-header"><h3 class="card-title">Attendance by subject</h3></div>
+            <div class="card-body"><div class="chart-box"><canvas id="subjectChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">My teaching load</h3>
+        <div class="card-tools">
+            <a href="{% url 'staff_add_result' %}" class="btn btn-sm">Enter marks</a>
+            <a href="{% url 'staff_update_attendance' %}" class="btn btn-sm">Correct attendance</a>
+        </div>
+    </div>
+    {% if subject_rows %}
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Subject</th><th>Course</th><th>Batch</th>
+                    <th class="text-right">Students</th><th class="text-right">Classes</th>
+                    <th style="min-width:170px">Class attendance</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for row in subject_rows %}
+                <tr>
+                    <td><strong>{{ row.subject.name }}</strong></td>
+                    <td>{{ row.subject.course.name|default:"&mdash;" }}</td>
+                    <td class="nowrap">{% if row.subject.session %}{{ row.subject.session.start_year|date:"Y" }}&ndash;{{ row.subject.session.end_year|date:"Y" }}{% else %}&mdash;{% endif %}</td>
+                    <td class="text-right">{{ row.students }}</td>
+                    <td class="text-right">{{ row.classes }}</td>
+                    <td>
+                        {% if row.percent is not None %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="meter {% if row.percent < threshold %}is-bad{% else %}is-ok{% endif %}" style="flex:1">
+                                <span style="width: {{ row.percent }}%"></span>
+                            </div>
+                            <span class="tabular text-sm {% if row.percent < threshold %}text-danger{% endif %}">{{ row.percent }}%</span>
+                        </div>
+                        {% else %}<span class="text-muted text-sm">Not taken yet</span>{% endif %}
+                    </td>
+                    <td class="nowrap no-print">
+                        <a href="{% url 'staff_take_attendance' %}?subject={{ row.subject.id }}" class="btn btn-sm">Take</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-bookmark"></i>
+        <h3>No subjects assigned to you yet</h3>
+        <p>The administrator assigns subjects under Academics &rsaquo; Subjects.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card" id="shortfall">
+            <div class="card-header">
+                <h3 class="card-title">Students short of {{ threshold }}%</h3>
+                {% if defaulter_count %}<span class="result-count">{{ defaulter_count }} in total</span>{% endif %}
+            </div>
+            {% if defaulters %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Student</th><th>Course</th><th class="text-right">Present</th><th style="min-width:150px">Attendance</th></tr></thead>
+                    <tbody>
+                        {% for row in defaulters %}
+                        <tr>
+                            <td><strong>{{ row.student.admin.first_name }} {{ row.student.admin.last_name }}</strong><br>
+                                <span class="text-muted text-sm">{{ row.student.register_num|default:"" }}</span></td>
+                            <td>{{ row.student.course.name|default:"&mdash;" }}</td>
+                            <td class="text-right tabular">{{ row.present }}/{{ row.total }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="meter is-bad" style="flex:1"><span style="width: {{ row.percent }}%"></span></div>
+                                    <span class="tabular text-sm text-danger">{{ row.percent }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><i class="fas fa-check-circle"></i>
+                <h3>Everyone is above {{ threshold }}%</h3></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Recent classes</h3></div>
+            <div class="card-body">
+                {% if recent_classes %}
+                <ul class="mini-list">
+                    {% for att in recent_classes %}
+                    <li>
+                        <span><strong>{{ att.subject.name }}</strong><br>
+                            <span class="text-muted text-sm">{{ att.subject.course.name }}</span></span>
+                        <span class="when">{{ att.date|date:"j M Y" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No classes recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+{{ chart_labels|json_script:"subject-labels" }}
+{{ chart_values|json_script:"subject-values" }}
+<script>
+(function () {
+  var el = document.getElementById('subjectChart');
+  if (!el) return;
+  var labels = JSON.parse(document.getElementById('subject-labels').textContent);
+  var values = JSON.parse(document.getElementById('subject-values').textContent);
+  var css = getComputedStyle(document.documentElement);
+  var ok = css.getPropertyValue('--ok').trim() || '#137a52';
+  var bad = css.getPropertyValue('--bad').trim() || '#a52f26';
+  var line = css.getPropertyValue('--line').trim() || '#dbe4e7';
+  var muted = css.getPropertyValue('--muted').trim() || '#647880';
+  var threshold = {{ threshold }};
+  Chart.defaults.global.defaultFontColor = muted;
+  new Chart(el, {
+    type: 'horizontalBar',
+    data: { labels: labels, datasets: [{
+      data: values, borderWidth: 0, barPercentage: .62,
+      backgroundColor: values.map(function (v) { return v < threshold ? bad : ok; })
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, legend: { display: false },
+      scales: {
+        xAxes: [{ ticks: { beginAtZero: true, max: 100, callback: function (v) { return v + '%'; } },
+                  gridLines: { color: line, drawBorder: false } }],
+        yAxes: [{ gridLines: { display: false } }]
+      }
+    }
+  });
+})();
+</script>
+{% endblock custom_js %}

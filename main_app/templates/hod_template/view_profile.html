@@ -1,0 +1,243 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .profile-head { display: flex; gap: 1.25rem; align-items: flex-start; flex-wrap: wrap; }
+    .profile-head__photo {
+        width: 104px; height: 128px; object-fit: cover; border-radius: var(--r);
+        border: 1px solid var(--line); background: var(--surface-2); flex: none;
+    }
+    .profile-head__photo--empty {
+        display: flex; align-items: center; justify-content: center;
+        color: var(--muted); font-size: 1.8rem;
+    }
+    .profile-head__main { flex: 1 1 260px; }
+    .profile-head__name { font-size: 1.4rem; margin: 0 0 .2rem; }
+    .profile-head__meta { color: var(--muted); font-size: .88rem; margin: 0 0 .6rem; }
+    .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .9rem 1.5rem; }
+    .fact__label {
+        font-size: .7rem; text-transform: uppercase; letter-spacing: .07em;
+        font-weight: 700; color: var(--muted); margin-bottom: .12rem;
+    }
+    /* Emails and Aadhaar numbers have no spaces to break on, so without this
+       they overflow the grid cell and collide with the next column. */
+    .fact__value { font-size: .92rem; overflow-wrap: anywhere; min-width: 0; }
+    .facts > div { min-width: 0; }
+    .att-summary { display: flex; align-items: baseline; gap: .5rem; }
+    .att-summary__pct { font-size: 2.2rem; font-weight: 700; letter-spacing: -.02em; }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+        <div class="profile-head">
+            {% if student.admin.profile_pic %}
+                <img class="profile-head__photo" src="{{ student.admin.profile_pic }}" alt="">
+            {% else %}
+                <div class="profile-head__photo profile-head__photo--empty"><i class="fas fa-user"></i></div>
+            {% endif %}
+
+            <div class="profile-head__main">
+                <h2 class="profile-head__name">{{ student.admin.first_name }} {{ student.admin.last_name }}</h2>
+                <p class="profile-head__meta">
+                    {{ student.course.name|default:"No course" }}
+                    &middot; {{ student.department.name|default:"No department" }}
+                    {% if student.session %}&middot; {{ student.session.start_year|date:"Y" }}&ndash;{{ student.session.end_year|date:"Y" }}{% endif %}
+                </p>
+                <div class="d-flex flex-wrap gap-1">
+                    {% if student.register_num %}<span class="badge badge-primary">Reg {{ student.register_num }}</span>{% endif %}
+                    {% if student.admission_num %}<span class="badge">Adm {{ student.admission_num }}</span>{% endif %}
+                    {% if overall_percent is not None %}
+                        <span class="badge {% if below_threshold %}badge-danger{% else %}badge-success{% endif %}">
+                            {{ overall_percent }}% attendance
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex gap-1 flex-wrap">
+                <a href="{% url 'manage_student' %}" class="btn btn-sm">Back to list</a>
+                <button type="button" class="btn btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+                <a href="{% url 'edit_student' student.id %}" class="btn btn-sm btn-primary"><i class="fas fa-pen"></i> Edit</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if below_threshold %}
+<div class="alert alert-warning">
+    <span>Attendance is {{ overall_percent }}%, below the {{ threshold }}% requirement
+    ({{ present_classes }} of {{ total_classes }} classes attended).</span>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Personal details</h3></div>
+            <div class="card-body">
+                <div class="facts">
+                    <div><div class="fact__label">Email</div><div class="fact__value">{{ student.admin.email }}</div></div>
+                    <div><div class="fact__label">Phone</div><div class="fact__value">{% if student.phone_num %}+91 {{ student.phone_num }}{% else %}&mdash;{% endif %}</div></div>
+                    <div><div class="fact__label">Date of birth</div><div class="fact__value">{{ student.date_of_birth|date:"j F Y"|default:"&mdash;" }}</div></div>
+                    <div><div class="fact__label">Gender</div><div class="fact__value">{% if student.admin.gender == 'M' %}Male{% elif student.admin.gender == 'F' %}Female{% else %}&mdash;{% endif %}</div></div>
+                    <div><div class="fact__label">Religion</div><div class="fact__value">{{ student.religion|default:"&mdash;" }}</div></div>
+                    <div><div class="fact__label">Aadhaar</div><div class="fact__value">{{ student.aadhar_num|default:"&mdash;" }}</div></div>
+                    <div style="grid-column: 1 / -1">
+                        <div class="fact__label">Address</div>
+                        <div class="fact__value">{{ student.admin.address|default:"&mdash;"|linebreaksbr }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Attendance</h3></div>
+            <div class="card-body">
+                {% if total_classes %}
+                <div class="att-summary mb-2">
+                    <span class="att-summary__pct {% if below_threshold %}text-danger{% else %}text-success{% endif %}">{{ overall_percent }}%</span>
+                    <span class="text-muted text-sm">{{ present_classes }} present &middot; {{ absent_classes }} absent &middot; {{ total_classes }} classes</span>
+                </div>
+                <div class="meter {% if below_threshold %}is-bad{% else %}is-ok{% endif %}">
+                    <span style="width: {{ overall_percent }}%"></span>
+                </div>
+                <p class="text-muted text-sm mt-2 mb-0">Requirement is {{ threshold }}%.</p>
+                {% else %}
+                <p class="text-muted mb-0">No attendance has been recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Attendance by subject</h3></div>
+    {% if attendance_rows %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Subject</th><th>Taught by</th><th class="text-right">Present</th>
+                    <th class="text-right">Absent</th><th class="text-right">Classes</th>
+                    <th style="min-width:170px">Attendance</th></tr>
+            </thead>
+            <tbody>
+                {% for row in attendance_rows %}
+                <tr>
+                    <td><strong>{{ row.subject.name }}</strong></td>
+                    <td class="text-muted">{{ row.subject.staff.admin.first_name }} {{ row.subject.staff.admin.last_name }}</td>
+                    <td class="text-right">{{ row.present }}</td>
+                    <td class="text-right">{{ row.absent }}</td>
+                    <td class="text-right">{{ row.total }}</td>
+                    <td>
+                        {% if row.percent is not None %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="meter {% if row.short %}is-bad{% else %}is-ok{% endif %}" style="flex:1">
+                                <span style="width: {{ row.percent }}%"></span>
+                            </div>
+                            <span class="tabular text-sm {% if row.short %}text-danger{% endif %}">{{ row.percent }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-muted text-sm">No classes yet</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty"><i class="fas fa-clipboard-check"></i>
+        <h3>No subjects for this course and batch</h3>
+        <p>Add subjects under Academics to start recording attendance.</p></div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Marks</h3></div>
+    {% if result_rows %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Subject</th><th class="text-right">Internal</th>
+                    <th class="text-right">Exam</th><th class="text-right">Total</th></tr>
+            </thead>
+            <tbody>
+                {% for row in result_rows %}
+                <tr>
+                    <td><strong>{{ row.subject.name }}</strong></td>
+                    <td class="text-right">{{ row.test }}</td>
+                    <td class="text-right">{{ row.exam }}</td>
+                    <td class="text-right"><strong>{{ row.total }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty"><i class="fas fa-poll"></i>
+        <h3>No marks recorded</h3>
+        <p>Staff upload marks from their Results screen.</p></div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Leave applications</h3></div>
+            {% if leaves %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Reason</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for leave in leaves %}
+                        <tr>
+                            <td class="nowrap">{{ leave.date }}</td>
+                            <td>{{ leave.message }}</td>
+                            <td>
+                                {% if leave.status == 1 %}<span class="badge badge-success">Approved</span>
+                                {% elif leave.status == -1 %}<span class="badge badge-danger">Rejected</span>
+                                {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><i class="fas fa-plane-departure"></i><h3>No leave applications</h3></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Feedback</h3></div>
+            {% if feedbacks %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Message</th><th>Reply</th></tr></thead>
+                    <tbody>
+                        {% for fb in feedbacks %}
+                        <tr>
+                            <td>{{ fb.feedback }}</td>
+                            <td>{% if fb.reply %}{{ fb.reply }}{% else %}<span class="badge badge-warning">Awaiting reply</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><i class="far fa-comment-dots"></i><h3>No feedback submitted</h3></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

@@ -1,0 +1,21 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">My profile</h3></div>
+            {% if can_edit %}
+                {% include "main_app/form_template.html" with form=form button_text="Save changes" %}
+            {% else %}
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <span>Profile editing has been turned off by the administrator.
+                        Contact the office to change your details.</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

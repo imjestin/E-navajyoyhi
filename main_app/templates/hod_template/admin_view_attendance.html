@@ -1,0 +1,227 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    /* The register can be many classes wide; keep the name column pinned and
+       let the identity columns shrink to their content so the date grid gets
+       the space. */
+    /* Size to content rather than stretching: otherwise every column shrinks
+       to its text and the leftover width all lands in the last one, giving a
+       500px progress bar. Scrolls horizontally once there are enough dates. */
+    /* Every real column sizes to its content and a final empty column soaks up
+       the remaining width. Without it the slack lands in whichever column is
+       last, stretching either the meter or the Present count across the page. */
+    table.register { table-layout: auto; width: 100%; }
+    table.register th.pct, table.register td.pct { width: 190px; min-width: 190px; }
+    table.register th.filler, table.register td.filler { width: auto; border-bottom: 0; }
+    .register th.sticky, .register td.sticky {
+        position: sticky; left: 0; z-index: 2; width: 1%; white-space: nowrap;
+        background: var(--surface); border-right: 2px solid var(--line);
+    }
+    .register thead th.sticky, .register tfoot th.sticky { background: var(--surface-2); z-index: 3; }
+    .register tbody tr:hover td.sticky { background: var(--brand-50); }
+    .register th.reg, .register td.reg { width: 1%; white-space: nowrap; }
+
+    /* Dates read horizontally: day number over month. */
+    .register th.day {
+        width: 52px; min-width: 52px; text-align: center;
+        padding: .45rem .2rem; line-height: 1.15;
+    }
+    .day__d { display: block; font-size: .82rem; font-weight: 700; color: var(--ink); }
+    .day__m { display: block; font-size: .62rem; letter-spacing: .04em; color: var(--muted); }
+    .register td.mark, .register th.mark { text-align: center; padding: .45rem .2rem; }
+
+    .mark-p, .mark-a, .mark-n {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 27px; height: 27px; border-radius: 7px;
+        font-size: .78rem; font-weight: 800; letter-spacing: .01em;
+    }
+    .mark-p { background: var(--ok);  color: #fff; }
+    .mark-a { background: var(--bad); color: #fff; }
+    .mark-n { background: var(--line-soft); color: var(--muted); font-weight: 600; }
+
+    /* Rows that fall short are tinted so they are findable at a glance. */
+    .register tr.is-short td.sticky { box-shadow: inset 3px 0 0 var(--bad); }
+    .register tbody td { border-bottom: 1px solid var(--line-soft); }
+    .register tfoot th { background: var(--surface-2); border-top: 2px solid var(--line); }
+
+    .legend { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+    .legend span.k { display: inline-flex; align-items: center; gap: .4rem; }
+
+    @media print {
+        /* A register is wide: give it the long edge of the page. */
+        @page { size: A4 landscape; margin: 12mm 10mm; }
+        table.register { table-layout: auto; }
+        /* Sticky breaks paging, and the filler only exists to soak up screen width. */
+        .register th.sticky, .register td.sticky { position: static !important; }
+        .register th.filler, .register td.filler { display: none !important; }
+        .register th.day { width: auto; min-width: 0; }
+        .day__d, .day__m { display: inline; font-size: 8pt; }
+        .day__m { margin-left: 1pt; }
+        /* Marks print as plain letters - no ink-heavy filled chips. */
+        .mark-p, .mark-a, .mark-n {
+            width: auto; height: auto; background: none !important;
+            color: #000 !important; font-weight: 700; border-radius: 0;
+        }
+        .register tr.is-short td.sticky { box-shadow: none; }
+        .register td.pct, .register th.pct { width: auto; min-width: 0; }
+        .legend { font-size: 8pt; color: #000; }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Attendance register</h3>
+        {% if subject %}
+        <div class="card-tools">
+            <a href="{% url 'export_attendance' %}?subject={{ selected_subject }}&amp;start={{ start }}&amp;end={{ end }}"
+               class="btn btn-sm"><i class="fas fa-file-export"></i> Export CSV</a>
+            <button type="button" class="btn btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="toolbar">
+        <form method="get" action="">
+            <select name="subject" class="form-control" style="min-width:280px" onchange="this.form.submit()">
+                <option value="">Choose a subject&hellip;</option>
+                {% for s in subjects %}
+                    <option value="{{ s.id }}" {% if selected_subject == s.id|stringformat:"s" %}selected{% endif %}>
+                        {{ s.course.name }} &middot; {{ s.name }}{% if s.session %} ({{ s.session.start_year|date:"Y" }}&ndash;{{ s.session.end_year|date:"Y" }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label class="text-sm text-muted mb-0" style="margin:0 .1rem 0 .4rem">From</label>
+            <input type="date" name="start" value="{{ start }}" class="form-control" style="width:auto">
+            <label class="text-sm text-muted mb-0" style="margin:0 .1rem">to</label>
+            <input type="date" name="end" value="{{ end }}" class="form-control" style="width:auto">
+
+            <div class="toolbar__right">
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                {% if selected_subject or start or end %}
+                    <a href="{% url 'admin_view_attendance' %}" class="btn btn-sm">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if not subject %}
+        <div class="empty">
+            <i class="fas fa-clipboard-check"></i>
+            <h3>Choose a subject to see its register</h3>
+            <p>Pick a subject above. You can narrow it to a date range, then export or print the result.</p>
+        </div>
+
+    {% elif not dates %}
+        <div class="empty">
+            <i class="far fa-calendar-alt"></i>
+            <h3>No classes recorded{% if start or end %} in this date range{% endif %}</h3>
+            <p>{{ subject.name }} &middot; {{ subject.course.name }}. Attendance is taken by staff from their own screen.</p>
+            {% if start or end %}<a href="?subject={{ selected_subject }}" class="btn">Clear the date range</a>{% endif %}
+        </div>
+
+    {% else %}
+        <div class="card-body" style="padding-bottom:.6rem">
+            <div class="row">
+                <div class="col-md-3 col-6">
+                    <div class="fact__label" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)">Subject</div>
+                    <div><strong>{{ subject.name }}</strong><br>
+                        <span class="text-muted text-sm">{{ subject.course.name }}
+                        {% if subject.session %}&middot; {{ subject.session.start_year|date:"Y" }}&ndash;{{ subject.session.end_year|date:"Y" }}{% endif %}</span></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)">Taken by</div>
+                    <div>{{ subject.staff.admin.first_name }} {{ subject.staff.admin.last_name }}</div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)">Classes / students</div>
+                    <div class="tabular">{{ classes_held }} class{{ classes_held|pluralize:"es" }} &middot; {{ student_count }} student{{ student_count|pluralize }}</div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)">Class average</div>
+                    <div>
+                        <strong class="{% if average_percent < threshold %}text-danger{% else %}text-success{% endif %}" style="font-size:1.2rem">{{ average_percent }}%</strong>
+                        {% if short_count %}<span class="badge badge-danger">{{ short_count }} below {{ threshold }}%</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="table table-hover register">
+                <thead>
+                    <tr>
+                        <th class="sticky">Student</th>
+                        <th class="reg">Register no</th>
+                        {% for d in dates %}
+                            <th class="day" title="{{ d.attendance.date|date:'l, j F Y' }} — {{ d.present }} of {{ d.recorded }} present">
+                                <span class="day__d">{{ d.attendance.date|date:"j" }}</span>
+                                <span class="day__m">{{ d.attendance.date|date:"M" }}</span>
+                            </th>
+                        {% endfor %}
+                        <th class="text-center nowrap">Present</th>
+                        <th class="pct">Attendance</th>
+                        <th class="filler"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr {% if row.short %}class="is-short"{% endif %}>
+                        <td class="sticky">
+                            <a href="{% url 'view_profile' row.student.id %}">{{ row.student.admin.first_name }} {{ row.student.admin.last_name }}</a>
+                        </td>
+                        <td class="reg text-muted">{{ row.student.register_num|default:"&mdash;" }}</td>
+                        {% for cell in row.cells %}
+                            <td class="mark">
+                                {% if cell is True %}<span class="mark-p" title="Present">P</span>
+                                {% elif cell is False %}<span class="mark-a" title="Absent">A</span>
+                                {% else %}<span class="mark-n" title="Not recorded">&ndash;</span>{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td class="text-center nowrap tabular">{{ row.present }}/{{ row.counted }}</td>
+                        <td class="pct">
+                            {% if row.percent is not None %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="meter {% if row.short %}is-bad{% else %}is-ok{% endif %}" style="flex:1">
+                                    <span style="width: {{ row.percent }}%"></span>
+                                </div>
+                                <span class="tabular text-sm {% if row.short %}text-danger{% endif %}">{{ row.percent }}%</span>
+                            </div>
+                            {% else %}<span class="text-muted text-sm">&mdash;</span>{% endif %}
+                        </td>
+                        <td class="filler"></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-muted">No students enrolled for this course and batch.</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th class="sticky">Present that day</th>
+                        <th class="reg"></th>
+                        {% for d in dates %}
+                            <th class="mark tabular {% if d.percent < threshold %}text-danger{% endif %}"
+                                title="{{ d.present }} of {{ d.recorded }} present">{{ d.present }}</th>
+                        {% endfor %}
+                        <th></th><th class="pct"></th><th class="filler"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="card-footer legend">
+            <span class="k"><span class="mark-p">P</span> Present</span>
+            <span class="k"><span class="mark-a">A</span> Absent</span>
+            <span class="k"><span class="mark-n">&middot;</span> Not recorded</span>
+            <span class="ml-auto">Requirement is {{ threshold }}%.</span>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock content %}

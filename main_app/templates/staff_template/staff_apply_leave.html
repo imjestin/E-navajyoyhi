@@ -1,0 +1,44 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Apply for leave</h3></div>
+            {% include "main_app/form_template.html" with form=form button_text="Submit application" %}
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">My applications</h3>
+                <span class="result-count">{{ leave_history|length }} in total</span>
+            </div>
+            {% if leave_history %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Reason</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for leave in leave_history %}
+                        <tr>
+                            <td class="nowrap">{{ leave.date }}</td>
+                            <td>{{ leave.message }}</td>
+                            <td>
+                                {% if leave.status == 1 %}<span class="badge badge-success">Approved</span>
+                                {% elif leave.status == -1 %}<span class="badge badge-danger">Rejected</span>
+                                {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><i class="fas fa-plane-departure"></i>
+                <h3>No applications yet</h3>
+                <p>Submitted applications appear here with their status.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

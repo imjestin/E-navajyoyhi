@@ -1,0 +1,226 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .settings { display: grid; grid-template-columns: 216px 1fr; gap: 1.1rem; align-items: start; }
+    @media (max-width: 800px) { .settings { grid-template-columns: 1fr; } }
+
+    .settings-nav { position: sticky; top: calc(var(--topbar) + 1rem); }
+    .settings-nav button {
+        display: flex; align-items: center; gap: .6rem; width: 100%;
+        padding: .55rem .75rem; margin-bottom: 2px;
+        background: none; border: 0; border-radius: var(--r-sm);
+        font: inherit; font-size: .88rem; color: var(--ink-2); text-align: left; cursor: pointer;
+    }
+    .settings-nav button:hover { background: var(--surface-2); }
+    .settings-nav button.is-active { background: var(--brand-600); color: #fff; font-weight: 600; }
+    .settings-nav button i { width: 16px; text-align: center; font-size: .85rem; }
+
+    .panel { display: none; }
+    .panel.is-active { display: block; }
+
+    .colour-input { height: 40px; padding: .2rem; cursor: pointer; }
+    .colour-row { display: flex; align-items: center; gap: .6rem; }
+    .colour-row code { font-size: .8rem; color: var(--muted); }
+
+    .brand-preview {
+        display: flex; align-items: center; gap: .8rem;
+        padding: .8rem; border: 1px solid var(--line); border-radius: var(--r);
+        background: var(--surface-2);
+    }
+    .brand-preview__logo {
+        width: 46px; height: 46px; border-radius: 10px; object-fit: cover;
+        background: var(--brand-600); color: #fff;
+        display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .switch-row {
+        display: flex; align-items: flex-start; gap: .7rem;
+        padding: .7rem 0; border-bottom: 1px solid var(--line-soft);
+    }
+    .switch-row:last-child { border-bottom: 0; }
+    .switch-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: .15rem; flex: none; }
+    .switch-row label { margin: 0; font-size: .9rem; font-weight: 600; color: var(--ink); }
+    .switch-row small { display: block; font-weight: 400; color: var(--muted); }
+
+    .image-field { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
+    .image-field__preview {
+        width: 168px; height: 104px; flex: none; overflow: hidden;
+        border: 1px solid var(--line); border-radius: var(--r);
+        background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+    }
+    .image-field__preview img { width: 100%; height: 100%; object-fit: contain; }
+    .image-field__none { color: var(--muted); font-size: .8rem; text-align: center; }
+    .image-field__none i { display: block; font-size: 1.3rem; margin-bottom: .25rem; opacity: .6; }
+    .image-field__controls { flex: 1 1 240px; min-width: 0; }
+    @media (max-width: 620px) { .image-field { flex-direction: column; } }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="settings">
+
+        <nav class="settings-nav card" style="padding:.5rem; margin-bottom:0">
+            {% for key, label, icon, fields in form.sections %}
+                <button type="button" data-panel="{{ key }}" {% if forloop.first %}class="is-active"{% endif %}>
+                    <i class="{{ icon }}"></i> {{ label }}
+                </button>
+            {% endfor %}
+        </nav>
+
+        <div>
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <span>{{ form.errors|length }} field{{ form.errors|length|pluralize }} need attention.
+                Open each tab to see what needs fixing.</span>
+            </div>
+            {% endif %}
+
+            {% for key, label, icon, fields in form.sections %}
+            <section class="panel card {% if forloop.first %}is-active{% endif %}" id="panel-{{ key }}">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="{{ icon }}"></i>&nbsp; {{ label }}</h3>
+                </div>
+                <div class="card-body">
+
+                    {% if key == 'branding' %}
+                    <div class="brand-preview mb-3">
+                        {% if settings_obj.logo %}
+                            <img class="brand-preview__logo" src="{{ settings_obj.logo.url }}" alt="">
+                        {% else %}
+                            <span class="brand-preview__logo">{{ settings_obj.short_name|first|upper }}</span>
+                        {% endif %}
+                        <div>
+                            <strong>{{ settings_obj.short_name }}</strong><br>
+                            <span class="text-muted text-sm">{{ settings_obj.college_name }}</span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-sm">Colours apply across the whole site as soon as you
+                    save. Printed pages stay black on white regardless.</p>
+                    {% endif %}
+
+                    {% if key == 'communication' %}
+                    <p class="text-muted text-sm mb-3">Credentials live in the server's
+                    <code>.env</code> file, never here. These switches only decide whether each
+                    channel is used.</p>
+                    {% endif %}
+
+                    <div class="row">
+                        {% for field in fields %}
+                            {% if field.name == 'logo' or field.name == 'login_background' %}
+                                <div class="col-12">
+                                    <div class="image-field">
+                                        <div class="image-field__preview">
+                                            {% if field.name == 'logo' and settings_obj.logo %}
+                                                <img src="{{ settings_obj.logo.url }}" alt="Current logo">
+                                            {% elif field.name == 'login_background' and settings_obj.login_background %}
+                                                <img src="{{ settings_obj.login_background.url }}" alt="Current background">
+                                            {% else %}
+                                                <span class="image-field__none"><i class="far fa-image"></i> Default</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="image-field__controls">
+                                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% if field.help_text %}<small class="form-text">{{ field.help_text }}</small>{% endif %}
+                                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif field.name == 'remove_logo' or field.name == 'remove_login_background' %}
+                                <div class="col-12">
+                                    <div class="switch-row" style="padding-top:0">
+                                        {{ field }}
+                                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    </div>
+                                </div>
+                            {% elif field.field.widget.input_type == 'checkbox' %}
+                                <div class="col-12">
+                                    <div class="switch-row">
+                                        {{ field }}
+                                        <label for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                                        </label>
+                                    </div>
+                                    {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                                </div>
+                            {% else %}
+                                <div class="{% if field.name == 'address' or field.name == 'tagline' or field.name == 'footer_note' or field.name == 'logo' %}col-12{% else %}col-md-6{% endif %}">
+                                    <div class="form-group">
+                                        <label for="{{ field.id_for_label }}" {% if field.field.required %}class="required"{% endif %}>{{ field.label }}</label>
+                                        {% if field.name == 'brand_color' or field.name == 'accent_color' %}
+                                            <div class="colour-row">
+                                                {{ field }}
+                                                <code>{{ field.value }}</code>
+                                            </div>
+                                        {% else %}
+                                            {{ field }}
+                                        {% endif %}
+                                        {% if field.help_text %}<small class="form-text">{{ field.help_text }}</small>{% endif %}
+                                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+            {% endfor %}
+
+            <div class="card">
+                <div class="card-body d-flex align-items-center gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save settings</button>
+                    <a href="{% url 'admin_home' %}" class="btn">Cancel</a>
+                    <span class="text-muted text-sm ml-auto">
+                        {% if settings_obj.updated_at %}Last saved {{ settings_obj.updated_at|date:"j M Y, H:i" }}{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+(function () {
+  var nav = document.querySelector('.settings-nav');
+  function show(key) {
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.classList.toggle('is-active', p.id === 'panel-' + key);
+    });
+    nav.querySelectorAll('button').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.panel === key);
+    });
+    try { localStorage.setItem('enj-settings-tab', key); } catch (e) {}
+  }
+  nav.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-panel]');
+    if (btn) show(btn.dataset.panel);
+  });
+
+  // Reopen the tab the admin was last on, and jump to the first error.
+  var firstError = document.querySelector('.panel .errorlist');
+  if (firstError) {
+    show(firstError.closest('.panel').id.replace('panel-', ''));
+  } else {
+    try {
+      var saved = localStorage.getItem('enj-settings-tab');
+      if (saved && document.getElementById('panel-' + saved)) show(saved);
+    } catch (e) {}
+  }
+
+  // Keep the hex readout beside each colour picker in step.
+  document.querySelectorAll('.colour-input').forEach(function (input) {
+    input.addEventListener('input', function () {
+      var code = input.parentElement.querySelector('code');
+      if (code) code.textContent = input.value;
+    });
+  });
+})();
+</script>
+{% endblock custom_js %}

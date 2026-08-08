@@ -1,0 +1,52 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Student leave applications</h3>
+        <span class="result-count">{{ allLeave|length }} in total</span>
+    </div>
+    {% if allLeave %}
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Student</th><th>Course</th><th>Date</th><th>Reason</th>
+                    <th>Status</th><th class="no-print">Decision</th></tr>
+            </thead>
+            <tbody>
+                {% for leave in allLeave %}
+                <tr>
+                    <td><strong>{{ leave.student.admin.first_name }} {{ leave.student.admin.last_name }}</strong><br>
+                        <span class="text-muted text-sm">{{ leave.student.register_num|default:"" }}</span></td>
+                    <td>{{ leave.student.course.name|default:"&mdash;" }}</td>
+                    <td class="nowrap">{{ leave.date }}</td>
+                    <td>{{ leave.message }}</td>
+                    <td>
+                        {% if leave.status == 1 %}<span class="badge badge-success">Approved</span>
+                        {% elif leave.status == -1 %}<span class="badge badge-danger">Rejected</span>
+                        {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                    </td>
+                    <td class="nowrap no-print">
+                        <form method="post" action="" style="display:inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="id" value="{{ leave.id }}">
+                            <button type="submit" name="status" value="1" class="btn btn-sm btn-success">Approve</button>
+                        </form>
+                        <form method="post" action="" style="display:inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="id" value="{{ leave.id }}">
+                            <button type="submit" name="status" value="-1" class="btn btn-sm btn-danger">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty"><i class="fas fa-plane-departure"></i>
+        <h3>No leave applications</h3>
+        <p>Applications submitted by students appear here for a decision.</p></div>
+    {% endif %}
+</div>
+{% endblock content %}
