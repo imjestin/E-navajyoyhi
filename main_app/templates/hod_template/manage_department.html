@@ -1,44 +1,45 @@
 {% extends 'main_app/base.html' %}
-{% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
-
+{% block page_title %}{{ page_title }}{% endblock page_title %}
 {% block content %}
-
-<section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">{{page_title}}</h3>
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body">
-                        <table id="example2" class="table table-bordered table-hover">
-                            <thead class="thead-dark">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Course</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for department in departments %}
-                                <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{department.name}}</td>
-                                    <td>
-                                        <a href="{% url 'edit_department' department.id %}" class="btn btn-info">Edit</a> -
-                                        <a href="{% url 'delete_department' department.id %}" onclick="return confirm('Are you sure you want to delete this course ?')" class="btn btn-danger">Delete</a> 
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Departments</h3>
+        <span class="result-count">{{ departments|length }} department{{ departments|length|pluralize }}</span>
+        <div class="card-tools">
+            <a href="{% url 'add_department' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Department</a>
         </div>
     </div>
-</section>
+    {% if departments %}
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead><tr><th>#</th><th>Name</th><th>Courses</th><th class="no-print">Actions</th></tr></thead>
+            <tbody>
+                {% for department in departments %}
+                <tr>
+                    <td class="text-muted">{{ forloop.counter }}</td>
+                    <td><strong>{{ department.name }}</strong></td>
+                    <td>
+                        {% for course in department.course_set.all %}
+                            <span class="badge">{{ course.name }}</span>
+                        {% empty %}<span class="text-muted text-sm">No courses yet</span>{% endfor %}
+                    </td>
+                    <td class="nowrap no-print">
+                        <a href="{% url 'edit_department' department.id %}" class="btn btn-sm btn-primary">Edit</a>
+                        <a href="{% url 'delete_department' department.id %}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('Delete {{ department.name }}? Courses and students attached to it will be affected.')">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-sitemap"></i>
+        <h3>No departments yet</h3>
+        <p>Departments come first &mdash; courses, staff and students all belong to one.</p>
+        <a href="{% url 'add_department' %}" class="btn btn-primary">Add your first department</a>
+    </div>
+    {% endif %}
+</div>
 {% endblock content %}
