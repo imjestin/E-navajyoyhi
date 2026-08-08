@@ -2,6 +2,10 @@
 Django==5.2.17
 django-filter==26.1
 
+# Reads .env; settings.py imports it at module level, so the app will not
+# start without it.
+python-dotenv==1.2.2
+
 # PDF generation (student lists, attendance reports)
 reportlab==5.0.0
 
