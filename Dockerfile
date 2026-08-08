@@ -1,4 +1,4 @@
-# E-Navajyothi college management system
+# SkillyCMS - college management system
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -27,10 +27,10 @@ COPY . .
 RUN SECRET_KEY=build-only-not-used DJANGO_SETTINGS_MODULE=college_management_system.settings \
     python manage.py collectstatic --noinput
 
-RUN useradd --create-home --uid 1000 enj \
+RUN useradd --create-home --uid 1000 skilly \
     && mkdir -p /data/media \
-    && chown -R enj:enj /app /data
-USER enj
+    && chown -R skilly:skilly /app /data
+USER skilly
 
 VOLUME ["/data"]
 EXPOSE 8000

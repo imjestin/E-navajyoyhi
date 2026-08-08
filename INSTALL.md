@@ -1,4 +1,4 @@
-# Installing E-Navajyothi
+# Installing SkillyCMS
 
 A college management system for attendance, marks, leave and notices, with a
 public site and a staff/student portal.
@@ -11,8 +11,8 @@ Two containers are started: the application and a PostgreSQL database.
 ## 1. Get the files
 
 ```sh
-git clone <your-repository-url> enavajyothi
-cd enavajyothi
+git clone <your-repository-url> skillycms
+cd skillycms
 cp .env.example .env
 ```
 
@@ -71,17 +71,17 @@ Two things need backing up: the database and the uploads volume.
 
 ```sh
 # database
-docker compose exec -T db pg_dump -U enavajyothi enavajyothi > backup-$(date +%F).sql
+docker compose exec -T db pg_dump -U skillycms skillycms > backup-$(date +%F).sql
 
 # uploads (logos, photographs) and the secret key
-docker run --rm -v enavajyothi_app_data:/data -v "$PWD":/out alpine \
+docker run --rm -v skillycms_app_data:/data -v "$PWD":/out alpine \
   tar czf /out/uploads-$(date +%F).tar.gz -C /data .
 ```
 
 Restoring the database:
 
 ```sh
-docker compose exec -T db psql -U enavajyothi enavajyothi < backup-2026-08-09.sql
+docker compose exec -T db psql -U skillycms skillycms < backup-2026-08-09.sql
 ```
 
 ### Upgrading

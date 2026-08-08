@@ -1230,7 +1230,7 @@ def _send_push(fcm_token, message, click_action):
             "https://fcm.googleapis.com/fcm/send",
             data=json.dumps({
                 'notification': {
-                    'title': "E-Navajyothi",
+                    'title': "SkillyCMS",
                     'body': message,
                     'click_action': reverse(click_action),
                     'icon': static('dist/img/AdminLTELogo.png'),

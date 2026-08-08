@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ site.college_name|default:"Navajyothi College" }}{% if site.city %} &middot; {{ site.city }}{% endif %}</title>
+    <title>{{ site.college_name|default:"Your College" }}{% if site.city %} &middot; {{ site.city }}{% endif %}</title>
     <meta name="description" content="{{ site.college_name }}{% if site.city %}, {{ site.city }}{% endif %}. {{ site.tagline|default:'' }}">
     <link rel="icon" type="image/png"
           href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
@@ -238,7 +238,7 @@
 <header class="topbar">
     <a class="topbar__brand" href="{% url 'landing' %}">
         <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}" alt="">
-        <span>{{ site.short_name|default:"E-Navajyothi" }}
+        <span>{{ site.short_name|default:"SkillyCMS" }}
             {% if site.affiliated_to %}<small>{{ site.affiliated_to }}</small>{% endif %}
         </span>
     </a>
@@ -259,7 +259,7 @@
     <div class="hero__body">
         <div class="wrap">
             {% if site.affiliated_to %}<div class="hero__eyebrow">Affiliated to {{ site.affiliated_to }}</div>{% endif %}
-            <h1>{{ site.college_name|default:"Navajyothi College" }}</h1>
+            <h1>{{ site.college_name|default:"Your College" }}</h1>
             <p>
                 {% if site.tagline %}{{ site.tagline }}.{% endif %}
                 Undergraduate study across {{ total_departments }} department{{ total_departments|pluralize }}
@@ -408,7 +408,7 @@
 
 <footer class="foot">
     <div class="wrap foot__row">
-        <span>&copy; {% now "Y" %} {{ site.college_name|default:"Navajyothi College" }}</span>
+        <span>&copy; {% now "Y" %} {{ site.college_name|default:"Your College" }}</span>
         {% if site.footer_note %}<span>{{ site.footer_note }}</span>{% endif %}
         <span class="right"><a href="{% url 'login_page' %}">Portal sign in</a></span>
     </div>

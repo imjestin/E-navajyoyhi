@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in &middot; {{ site.short_name|default:"E-Navajyothi" }}</title>
+    <title>Sign in &middot; {{ site.short_name|default:"SkillyCMS" }}</title>
     <link rel="icon" type="image/png"
           href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
 
@@ -71,8 +71,8 @@
     <div class="signin__card">
         <div class="signin__brand">
             <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}" alt="">
-            <h1 class="signin__name">{{ site.short_name|default:"E-Navajyothi" }}</h1>
-            <p class="signin__college">{{ site.college_name|default:"Navajyothi College" }}{% if site.city %}, {{ site.city }}{% endif %}</p>
+            <h1 class="signin__name">{{ site.short_name|default:"SkillyCMS" }}</h1>
+            <p class="signin__college">{{ site.college_name|default:"Your College" }}{% if site.city %}, {{ site.city }}{% endif %}</p>
             {% if site.tagline %}<p class="signin__tagline">{{ site.tagline }}</p>{% endif %}
         </div>
 

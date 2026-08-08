@@ -1,4 +1,4 @@
-# E-Navajyothi
+# SkillyCMS
 
 College management system: attendance, marks, leave, feedback and notices, with
 a public college site and a role-based portal for administrators, staff and

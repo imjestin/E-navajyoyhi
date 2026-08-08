@@ -52,9 +52,9 @@ class SiteSettings(models.Model):
     THEME_CHOICES = [("system", "Follow the device"), ("light", "Light"), ("dark", "Dark")]
 
     # --- Institution ------------------------------------------------------
-    college_name = models.CharField(max_length=200, default="Navajyothi College")
+    college_name = models.CharField(max_length=200, default="Your College")
     short_name = models.CharField(
-        max_length=60, default="E-Navajyothi",
+        max_length=60, default="SkillyCMS",
         help_text="Shown in the sidebar and browser tab.")
     tagline = models.CharField(max_length=200, blank=True)
     affiliated_to = models.CharField(max_length=200, blank=True,

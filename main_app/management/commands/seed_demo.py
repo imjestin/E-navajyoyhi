@@ -24,7 +24,10 @@ from main_app.models import (Attendance, AttendanceReport, Course, CustomUser,
                              NotificationStaff, NotificationStudent, Session,
                              Staff, Student, StudentResult, Subject)
 
-DEMO_DOMAIN = "@demo.enavajyothi.local"
+DEMO_DOMAIN = "@demo.skillycms.local"
+# Accounts seeded before the product was renamed. Kept so --delete
+# can still clean them up.
+LEGACY_DEMO_DOMAINS = ["@demo.enavajyothi.local"]
 DEMO_PASSWORD = "demo1234"
 
 DEPARTMENTS = ["Computer Science", "Commerce", "English", "Mathematics", "Physics"]
@@ -140,7 +143,11 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------ delete
 
     def delete_demo_data(self):
-        users = CustomUser.objects.filter(email__endswith=DEMO_DOMAIN)
+        from django.db.models import Q
+        match = Q(email__endswith=DEMO_DOMAIN)
+        for legacy in LEGACY_DEMO_DOMAINS:
+            match |= Q(email__endswith=legacy)
+        users = CustomUser.objects.filter(match)
         count = users.count()
         # Staff/Student rows cascade from CustomUser; attendance, results,
         # leave, feedback and notifications cascade from those in turn.

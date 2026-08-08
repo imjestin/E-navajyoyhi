@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page_title %}{{ page_title }} &middot; {% endif %}{{ site.short_name|default:"E-Navajyothi" }}</title>
+    <title>{% if page_title %}{{ page_title }} &middot; {% endif %}{{ site.short_name|default:"SkillyCMS" }}</title>
     <link rel="icon" type="image/png" href="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'dist/img/navlogin.png' %}{% endif %}">
 
     {# Theme is applied before first paint so the page never flashes the wrong ground. #}
@@ -71,7 +71,7 @@
 
                 {# Letterhead: hidden on screen, printed at the top of every page. #}
                 <div class="print-head print-only">
-                    <div class="print-head__org">{{ site.college_name|default:"Navajyothi College" }}{% if site.city %}, {{ site.city }}{% endif %}</div>
+                    <div class="print-head__org">{{ site.college_name|default:"Your College" }}{% if site.city %}, {{ site.city }}{% endif %}</div>
                     {% if site.affiliated_to %}<div class="print-head__meta">Affiliated to {{ site.affiliated_to }}</div>{% endif %}
                     <div class="print-head__title">{{ page_title }}</div>
                     <div class="print-head__meta">
