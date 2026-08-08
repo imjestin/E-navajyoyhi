@@ -17,6 +17,8 @@
     .settings-nav button:hover { background: var(--surface-2); }
     .settings-nav button.is-active { background: var(--brand-600); color: #fff; font-weight: 600; }
     .settings-nav button i { width: 16px; text-align: center; font-size: .85rem; }
+    .settings-nav .has-error { color: var(--bad); margin-left: auto; }
+    .settings-nav button.is-active .has-error { color: #fff; }
 
     .panel { display: none; }
     .panel.is-active { display: block; }
@@ -67,15 +69,23 @@
             {% for key, label, icon, fields in form.sections %}
                 <button type="button" data-panel="{{ key }}" {% if forloop.first %}class="is-active"{% endif %}>
                     <i class="{{ icon }}"></i> {{ label }}
+                    {% if key in tabs_with_errors %}<i class="fas fa-exclamation-circle has-error"></i>{% endif %}
                 </button>
             {% endfor %}
         </nav>
 
         <div>
-            {% if form.errors %}
+            {% if problems %}
             <div class="alert alert-danger">
-                <span>{{ form.errors|length }} field{{ form.errors|length|pluralize }} need attention.
-                Open each tab to see what needs fixing.</span>
+                <span>
+                    <strong>{{ problems|length }} field{{ problems|length|pluralize }} could not be saved:</strong>
+                    <ul style="margin:.45rem 0 0; padding-left:1.1rem">
+                        {% for p in problems %}
+                        <li><a href="#" data-goto="{{ p.tab_key }}">{{ p.tab_label }} &rsaquo; <strong>{{ p.field }}</strong></a>
+                            &mdash; {{ p.message }}</li>
+                        {% endfor %}
+                    </ul>
+                </span>
             </div>
             {% endif %}
 
@@ -88,8 +98,8 @@
 
                     {% if key == 'branding' %}
                     <div class="brand-preview mb-3">
-                        {% if settings_obj.logo %}
-                            <img class="brand-preview__logo" src="{{ settings_obj.logo.url }}" alt="">
+                        {% if saved.logo %}
+                            <img class="brand-preview__logo" src="{{ saved.logo.url }}" alt="">
                         {% else %}
                             <span class="brand-preview__logo">{{ settings_obj.short_name|first|upper }}</span>
                         {% endif %}
@@ -114,10 +124,10 @@
                                 <div class="col-12">
                                     <div class="image-field">
                                         <div class="image-field__preview">
-                                            {% if field.name == 'logo' and settings_obj.logo %}
-                                                <img src="{{ settings_obj.logo.url }}" alt="Current logo">
-                                            {% elif field.name == 'login_background' and settings_obj.login_background %}
-                                                <img src="{{ settings_obj.login_background.url }}" alt="Current background">
+                                            {% if field.name == 'logo' and saved.logo %}
+                                                <img src="{{ saved.logo.url }}" alt="Current logo">
+                                            {% elif field.name == 'login_background' and saved.login_background %}
+                                                <img src="{{ saved.login_background.url }}" alt="Current background">
                                             {% else %}
                                                 <span class="image-field__none"><i class="far fa-image"></i> Default</span>
                                             {% endif %}
@@ -201,6 +211,10 @@
   nav.addEventListener('click', function (e) {
     var btn = e.target.closest('button[data-panel]');
     if (btn) show(btn.dataset.panel);
+  });
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('[data-goto]');   // jump from the problem list
+    if (link) { e.preventDefault(); show(link.dataset.goto); }
   });
 
   // Reopen the tab the admin was last on, and jump to the first error.

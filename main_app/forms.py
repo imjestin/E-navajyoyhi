@@ -331,7 +331,11 @@ class SiteSettingsForm(FormSettings):
 
     class Meta:
         model = SiteSettings
-        exclude = ["updated_at"]
+        # setup_complete / setup_step belong to the first-run wizard, not to
+        # this screen. Leaving them on the form put a *required* field
+        # (setup_step) on it that no tab renders, so the browser never
+        # submitted it and every save failed with one invisible error.
+        exclude = ["updated_at", "setup_complete", "setup_step"]
 
 
 class EditResultForm(FormSettings):

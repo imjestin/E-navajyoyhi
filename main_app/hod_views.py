@@ -487,10 +487,35 @@ def site_settings_view(request):
             form.save()
             messages.success(request, "Settings saved.")
             return redirect(reverse('site_settings'))
-        messages.error(request, "Some settings could not be saved - check the fields marked below.")
+        messages.error(request, "Settings were not saved. See the problems listed below.")
+
+    # Which tab each failing field lives on, so the page can say exactly where
+    # the problem is rather than "open each tab to see what needs fixing".
+    field_tab = {name: (key, label)
+                 for key, label, _icon, names in SiteSettingsForm.SECTIONS
+                 for name in names}
+    problems, tabs_with_errors = [], set()
+    for name, errors in form.errors.items():
+        key, label = field_tab.get(name, ("institution", "Institution"))
+        tabs_with_errors.add(key)
+        problems.append({
+            "tab_key": key,
+            "tab_label": label,
+            "field": form.fields[name].label if name in form.fields else name,
+            "message": errors[0],
+        })
+
+    # Read the preview images straight from the database. `settings_obj` is
+    # bound to the form, so a failed submission leaves an unsaved filename on
+    # it and the preview would point at a file that was never written.
+    saved = SiteSettings.objects.filter(pk=1).first()
+
     return render(request, "hod_template/settings.html", {
         'form': form,
         'settings_obj': settings_obj,
+        'saved': saved,
+        'problems': problems,
+        'tabs_with_errors': tabs_with_errors,
         'page_title': 'Settings',
     })
 
